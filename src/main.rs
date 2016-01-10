@@ -93,7 +93,6 @@ fn main() {
   let x = Var::new("x", 0);
   let expra = Expr::var(&a);
   let exprx = Expr::var(&x);
-  // let x = Expr::var("x", 0);
   println!("{}", x.to_string());
   let id = Expr::pi(a.clone(),
                     Expr::constant(Const::Data),
