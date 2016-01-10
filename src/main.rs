@@ -29,6 +29,14 @@ impl Var {
   }
 }
 
+fn v(name: &str, idx: i32) -> Var {
+  Var::new(name, idx)
+}
+
+fn v0(name: &str) -> Var {
+  v(name, 0)
+}
+
 impl ToString for Var {
   fn to_string(&self) -> String {
     self.name.clone()
@@ -104,6 +112,22 @@ impl Expr {
   }
 }
 
+fn constant(c: Const) -> Expr {
+  Expr::constant(c)
+}
+fn var(v: &Var) -> Expr {
+  Expr::var(v)
+}
+fn lam(var: Var, ty: Expr, body: Expr) -> Expr {
+  Expr::lam(var, ty, body)
+}
+fn pi(var: Var, ty: Expr, body: Expr) -> Expr {
+  Expr::pi(var, ty, body)
+}
+fn app(f: Expr, arg: Expr) -> Expr {
+  Expr::app(f, arg)
+}
+
 impl ToString for Expr {
   fn to_string(&self) -> String {
     use Expr::*;
@@ -130,16 +154,13 @@ impl ToString for Expr {
 
 fn main() {
   println!("{}", Const::Data.to_string());
-  let a = Var::new("a", 0);
-  let x = Var::new("x", 0);
-  let expra = Expr::var(&a);
-  let exprx = Expr::var(&x);
+  let a = v("a", 0);
+  let x = v("x", 0);
+  let expra = var(&a);
+  let exprx = var(&x);
   println!("{}", x.to_string());
-  let id = Expr::pi(a.clone(),
-                    Expr::constant(Const::Data),
-                    Expr::lam(x, expra, exprx));
+  let id = pi(a.clone(), constant(Const::Data), lam(x, expra, exprx));
   println!("{}", id.to_string());
-  let apply_id = Expr::app(Expr::app(id, Expr::var(&Var::new("int", 0))),
-                           Expr::var(&Var::new("1", 0)));
+  let apply_id = app(app(id, var(&v("int", 0))), var(&v("1", 0)));
   println!("{}", apply_id.to_string());
 }
