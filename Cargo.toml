@@ -1,0 +1,8 @@
+[package]
+name = "system-zero"
+version = "0.1.0"
+authors = ["Matthew O'Connor <thegreendragon@gmail.com>"]
+
+[dependencies]
+
+itertools="0.4.5"
