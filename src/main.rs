@@ -107,17 +107,17 @@ impl Expr {
 impl ToString for Expr {
   fn to_string(&self) -> String {
     use Expr::*;
-    match self {
-      &Const(ref constant) => constant.to_string(),
-      &Var(ref var) => var.to_string(),
-      &Lam(ref var, ref ty, ref body) => {
+    match *self {
+      Const(ref constant) => constant.to_string(),
+      Var(ref var) => var.to_string(),
+      Lam(ref var, ref ty, ref body) => {
         var.to_string() + ":" + &ty.to_string() + " -> " + &body.to_string()
       }
-      &Pi(ref var, ref ty, ref body) => {
+      Pi(ref var, ref ty, ref body) => {
         "forall (".to_string() + &var.to_string() + ":" + &ty.to_string() +
         ") -> " + &body.to_string()
       }
-      &App(ref f, ref arg) => {
+      App(ref f, ref arg) => {
         if f.is_lam() || f.is_pi() {
           "(".to_string() + &f.to_string() + ") " + &arg.to_string()
         } else {
