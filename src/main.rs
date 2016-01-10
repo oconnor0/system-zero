@@ -66,6 +66,42 @@ impl Expr {
   pub fn app(f: Expr, arg: Expr) -> Expr {
     Expr::App(Box::new(f), Box::new(arg))
   }
+
+  pub fn is_constant(&self) -> bool {
+    use Expr::*;
+    match *self {
+      Const(_) => true,
+      _ => false,
+    }
+  }
+  pub fn is_var(&self) -> bool {
+    use Expr::*;
+    match *self {
+      Var(_) => true,
+      _ => false,
+    }
+  }
+  pub fn is_lam(&self) -> bool {
+    use Expr::*;
+    match *self {
+      Lam(_, _, _) => true,
+      _ => false,
+    }
+  }
+  pub fn is_pi(&self) -> bool {
+    use Expr::*;
+    match *self {
+      Pi(_, _, _) => true,
+      _ => false,
+    }
+  }
+  pub fn is_app(&self) -> bool {
+    use Expr::*;
+    match *self {
+      App(_, _) => true,
+      _ => false,
+    }
+  }
 }
 
 impl ToString for Expr {
@@ -82,7 +118,11 @@ impl ToString for Expr {
         ") -> " + &body.to_string()
       }
       &App(ref f, ref arg) => {
-        "(".to_string() + &f.to_string() + ") " + &arg.to_string()
+        if f.is_lam() || f.is_pi() {
+          "(".to_string() + &f.to_string() + ") " + &arg.to_string()
+        } else {
+          f.to_string() + " " + &arg.to_string()
+        }
       }
     }
   }
@@ -90,7 +130,6 @@ impl ToString for Expr {
 
 fn main() {
   println!("{}", Const::Data.to_string());
-  println!("{:?}", Expr::constant(Const::Data));
   let a = Var::new("a", 0);
   let x = Var::new("x", 0);
   let expra = Expr::var(&a);
