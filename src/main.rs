@@ -32,7 +32,7 @@ impl Var {
 impl ToString for Var {
   fn to_string(&self) -> String {
     self.name.clone()
-     // + "@" + &self.idx.to_string()
+    // + "@" + &self.idx.to_string()
   }
 }
 
@@ -81,7 +81,9 @@ impl ToString for Expr {
         "forall (".to_string() + &var.to_string() + ":" + &ty.to_string() +
         ") -> " + &body.to_string()
       }
-      &App(ref f, ref arg) => f.to_string() + " " + &arg.to_string(),
+      &App(ref f, ref arg) => {
+        "(".to_string() + &f.to_string() + ") " + &arg.to_string()
+      }
     }
   }
 }
@@ -98,4 +100,7 @@ fn main() {
                     Expr::constant(Const::Data),
                     Expr::lam(x, expra, exprx));
   println!("{}", id.to_string());
+  let apply_id = Expr::app(Expr::app(id, Expr::var(&Var::new("int", 0))),
+                           Expr::var(&Var::new("1", 0)));
+  println!("{}", apply_id.to_string());
 }
