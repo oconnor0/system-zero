@@ -29,12 +29,12 @@ impl Var {
   }
 }
 
-fn v(name: &str, idx: i32) -> Var {
+fn vn(name: &str, idx: i32) -> Var {
   Var::new(name, idx)
 }
 
-fn v0(name: &str) -> Var {
-  v(name, 0)
+fn v(name: &str) -> Var {
+  vn(name, 0)
 }
 
 impl ToString for Var {
@@ -154,13 +154,13 @@ impl ToString for Expr {
 
 fn main() {
   println!("{}", Const::Data.to_string());
-  let a = v("a", 0);
-  let x = v("x", 0);
+  let a = v("a");
+  let x = v("x");
   let expra = var(&a);
   let exprx = var(&x);
   println!("{}", x.to_string());
   let id = pi(a.clone(), constant(Const::Data), lam(x, expra, exprx));
   println!("{}", id.to_string());
-  let apply_id = app(app(id, var(&v("int", 0))), var(&v("1", 0)));
+  let apply_id = app(app(id, var(&v("int"))), var(&v("1")));
   println!("{}", apply_id.to_string());
 }
