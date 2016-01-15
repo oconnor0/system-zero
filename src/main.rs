@@ -138,10 +138,11 @@ impl ToString for Expr {
       Const(ref constant) => constant.to_string(),
       Var(ref var) => var.to_string(),
       Lam(ref var, ref ty, ref body) => {
-        var.to_string() + ":" + &ty.to_string() + " -> " + &body.to_string()
+        "(".to_string() + &var.to_string() + " : " + &ty.to_string() + ") -> " +
+        &body.to_string()
       }
       Pi(ref var, ref ty, ref body) => {
-        "forall (".to_string() + &var.to_string() + ":" + &ty.to_string() +
+        "forall (".to_string() + &var.to_string() + " : " + &ty.to_string() +
         ") -> " + &body.to_string()
       }
       App(ref f, ref arg) => {
@@ -166,4 +167,24 @@ fn main() {
   println!("{}", id.to_string());
   let apply_id = app(app(id, var(&v("int"))), var(&v("1")));
   println!("{}", apply_id.to_string());
+}
+
+#[test]
+fn test_to_string() {
+  let codata = Const::Codata;
+  println!("{}", codata.to_string());
+  assert_eq!("codata", codata.to_string());
+  let a = v("a");
+  let x = v("x");
+  let expra = var(&a);
+  let exprx = var(&x);
+  println!("{}", x.to_string());
+  assert_eq!("x", x.to_string());
+  let id = pi(a.clone(), constant(Const::Data), lam(x, expra, exprx));
+  println!("{}", id.to_string());
+  assert_eq!("forall (a : data) -> (x : a) -> x", id.to_string());
+  let apply_id = app(app(id, var(&v("int"))), var(&v("1")));
+  println!("{}", apply_id.to_string());
+  assert_eq!("(forall (a : data) -> (x : a) -> x) int 1",
+             apply_id.to_string());
 }
