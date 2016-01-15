@@ -39,8 +39,11 @@ fn v(name: &str) -> Var {
 
 impl ToString for Var {
   fn to_string(&self) -> String {
-    self.name.clone()
-    // + "@" + &self.idx.to_string()
+    if self.idx == 0 {
+      self.name.clone()
+    } else {
+      self.name.clone() + "@" + &self.idx.to_string()
+    }
   }
 }
 
