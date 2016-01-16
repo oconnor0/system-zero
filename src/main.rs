@@ -1,15 +1,24 @@
+trait Normalize {
+  fn normalize(&self) -> Self;
+}
+
 #[derive(Clone, Copy, Debug)]
 enum Const {
   Data,
   Codata,
 }
 
+impl Normalize for Const {
+  fn normalize(&self) -> Const {
+    *self
+  }
+}
+
 impl ToString for Const {
   fn to_string(&self) -> String {
-    use Const::*;
     match *self {
-      Data => "data".to_string(),
-      Codata => "codata".to_string(),
+      Const::Data => "data".to_string(),
+      Const::Codata => "codata".to_string(),
     }
   }
 }
@@ -35,6 +44,12 @@ fn vn(name: &str, idx: i32) -> Var {
 
 fn v(name: &str) -> Var {
   vn(name, 0)
+}
+
+impl Normalize for Var {
+  fn normalize(&self) -> Var {
+    self.clone()
+  }
 }
 
 impl ToString for Var {
@@ -79,9 +94,8 @@ impl Expr {
   }
 
   pub fn is_constant(&self) -> bool {
-    use Expr::*;
     match *self {
-      Const(_) => true,
+      Expr::Const(_) => true,
       _ => false,
     }
   }
@@ -93,23 +107,20 @@ impl Expr {
     }
   }
   pub fn is_lam(&self) -> bool {
-    use Expr::*;
     match *self {
-      Lam(_, _, _) => true,
+      Expr::Lam(_, _, _) => true,
       _ => false,
     }
   }
   pub fn is_pi(&self) -> bool {
-    use Expr::*;
     match *self {
-      Pi(_, _, _) => true,
+      Expr::Pi(_, _, _) => true,
       _ => false,
     }
   }
   pub fn is_app(&self) -> bool {
-    use Expr::*;
     match *self {
-      App(_, _) => true,
+      Expr::App(_, _) => true,
       _ => false,
     }
   }
@@ -129,6 +140,32 @@ fn pi(var: Var, ty: Expr, body: Expr) -> Expr {
 }
 fn app(f: Expr, arg: Expr) -> Expr {
   Expr::app(f, arg)
+}
+
+impl Normalize for Expr {
+  fn normalize(&self) -> Expr {
+    use Expr::*;
+    match *self {
+      Const(ref constant) => Const(constant.normalize()),
+      Var(ref var) => Var(var.normalize()),
+      Lam(ref var, ref ty, ref body) => {
+        let l = &Lam(var.normalize(),
+                     Box::new(ty.normalize()),
+                     Box::new(body.normalize()));
+        l.clone()
+      }
+      Pi(ref var, ref ty, ref body) => {
+        let p = &Pi(var.normalize(),
+                    Box::new(ty.normalize()),
+                    Box::new(body.normalize()));
+        p.clone()
+      }
+      App(ref f, ref arg) => {
+        let a = &App(Box::new(f.normalize()), Box::new(arg.normalize()));
+        a.clone()
+      }
+    }
+  }
 }
 
 impl ToString for Expr {
@@ -167,6 +204,7 @@ fn main() {
   println!("{}", id.to_string());
   let apply_id = app(app(id, var(&v("int"))), var(&v("1")));
   println!("{}", apply_id.to_string());
+  println!("{}", apply_id.normalize().to_string());
 }
 
 #[test]
