@@ -2,7 +2,7 @@ trait Normalize {
   fn normalize(&self) -> Self;
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum Const {
   Data,
   Codata,
@@ -23,7 +23,7 @@ impl ToString for Const {
   }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 struct Var {
   name: String,
   idx: i32,
@@ -62,7 +62,7 @@ impl ToString for Var {
   }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 enum Expr {
   // Type system constants
   Const(Const),
@@ -142,9 +142,44 @@ fn app(f: Expr, arg: Expr) -> Expr {
   Expr::app(f, arg)
 }
 
+fn replace(val: &Var, with: &Expr, body: &Box<Expr>) -> Expr {
+  use Expr::*;
+  println!("replacing {} with {} in {}",
+           val.to_string(),
+           with.to_string(),
+           body.to_string());
+  // *body.clone()
+  match **body {
+    Const(ref constant) => *body.clone(), //Const(constant),
+    Var(ref var) => {
+      println!("replacing var");
+      if var.to_string() == val.to_string() {
+        println!("  eq -> replacing");
+        with.clone()
+      } else {
+        println!("  no change");
+        Var(var.clone())
+      }
+    }
+    Lam(ref var, ref ty, ref body) => {
+      // println!("  lam");
+      let ty = Box::new(replace(val, &with.clone(), &ty));
+      // let body = Box::new(replace(val, with, &body));
+      Lam(var.clone(), ty.clone(), body.clone())
+      // panic!("Lam")
+      // Lam(var.clone(),
+      //     Box::new(replace(val.clone(), with.clone(), ty.clone())),
+      //     Box::new(replace(val.clone(), with.clone(), body.clone())))
+    }
+    Pi(ref var, ref ty, ref body) => panic!("Pi"),
+    App(ref f, ref arg) => panic!("App"), //replace(val, with, f.clone()),
+  }
+}
+
 impl Normalize for Expr {
   fn normalize(&self) -> Expr {
     use Expr::*;
+    println!("normalize {}", self.to_string());
     match *self {
       Const(ref constant) => Const(constant.normalize()),
       Var(ref var) => Var(var.normalize()),
@@ -161,8 +196,16 @@ impl Normalize for Expr {
         p.clone()
       }
       App(ref f, ref arg) => {
-        let a = &App(Box::new(f.normalize()), Box::new(arg.normalize()));
-        a.clone()
+        let f = f.normalize();
+        let arg = arg.normalize();
+        if let Lam(var, ty, body) = f {
+          replace(&var, &arg, &body)
+          // Lam(var, ty, body)
+        } else if let Pi(var, ty, body) = f {
+          replace(&var, &arg, &body)
+        } else {
+          panic!("f isn't a function {}", f.to_string())
+        }
       }
     }
   }
@@ -193,6 +236,10 @@ impl ToString for Expr {
   }
 }
 
+// trait Ctor {}
+
+// impl Ctor for Expr
+
 fn main() {
   println!("{}", Const::Data.to_string());
   let a = v("a");
@@ -202,6 +249,8 @@ fn main() {
   println!("{}", x.to_string());
   let id = pi(a.clone(), constant(Const::Data), lam(x, expra, exprx));
   println!("{}", id.to_string());
+  let apply_int = app(id.clone(), var(&v("int")));
+  println!("{}", apply_int.normalize().to_string());
   let apply_id = app(app(id, var(&v("int"))), var(&v("1")));
   println!("{}", apply_id.to_string());
   println!("{}", apply_id.normalize().to_string());
