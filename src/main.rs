@@ -248,8 +248,8 @@ fn test_to_string() {
   let codata = Const::Codata;
   println!("{}", codata.to_string());
   assert_eq!("codata", codata.to_string());
-  let a = v("a");
-  let x = v("x");
+  let a = Var::new("a", 0);
+  let x = Var::new("x", 0);
   let expra = var(&a);
   let exprx = var(&x);
   println!("{}", x.to_string());
@@ -257,7 +257,7 @@ fn test_to_string() {
   let id = pi(a.clone(), constant(Const::Data), lam(x, expra, exprx));
   println!("{}", id.to_string());
   assert_eq!("forall (a : data) -> (x : a) -> x", id.to_string());
-  let apply_id = app(app(id, var(&v("int"))), var(&v("1")));
+  let apply_id = app(app(id, var(&Var::new("int", 0))), var(&Var::new("1", 0)));
   println!("{}", apply_id.to_string());
   assert_eq!("(forall (a : data) -> (x : a) -> x) int 1",
              apply_id.to_string());
