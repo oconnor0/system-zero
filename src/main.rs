@@ -38,14 +38,6 @@ impl Var {
   }
 }
 
-fn vn(name: &str, idx: i32) -> Var {
-  Var::new(name, idx)
-}
-
-fn v(name: &str) -> Var {
-  vn(name, 0)
-}
-
 impl Normalize for Var {
   fn normalize(&self) -> Var {
     self.clone()
@@ -100,9 +92,8 @@ impl Expr {
     }
   }
   pub fn is_var(&self) -> bool {
-    use Expr::*;
     match *self {
-      Var(_) => true,
+      Expr::Var(_) => true,
       _ => false,
     }
   }
@@ -236,22 +227,18 @@ impl ToString for Expr {
   }
 }
 
-// trait Ctor {}
-
-// impl Ctor for Expr
-
 fn main() {
   println!("{}", Const::Data.to_string());
-  let a = v("a");
-  let x = v("x");
+  let a = Var::new("a", 0);
+  let x = Var::new("x", 0);
   let expra = var(&a);
   let exprx = var(&x);
   println!("{}", x.to_string());
   let id = pi(a.clone(), constant(Const::Data), lam(x, expra, exprx));
   println!("{}", id.to_string());
-  let apply_int = app(id.clone(), var(&v("int")));
+  let apply_int = app(id.clone(), var(&Var::new("int", 0)));
   println!("{}", apply_int.normalize().to_string());
-  let apply_id = app(app(id, var(&v("int"))), var(&v("1")));
+  let apply_id = app(app(id, var(&Var::new("int", 0))), var(&Var::new("1", 0)));
   println!("{}", apply_id.to_string());
   println!("{}", apply_id.normalize().to_string());
 }
