@@ -144,6 +144,10 @@ fn app(f: Expr, arg: Expr) -> Expr {
 
 fn replace(val: &Var, with: &Expr, body: &Expr) -> Expr {
   use Expr::*;
+  // println!("replace {} with {} in {}",
+  //          val.to_string(),
+  //          with.to_string(),
+  //          body.to_string());
   match *body {
     Const(ref constant) => body.clone(),
     Var(ref var) => {
@@ -154,27 +158,39 @@ fn replace(val: &Var, with: &Expr, body: &Expr) -> Expr {
       }
     }
     Lam(ref var, ref ty, ref body) => {
-      // TODO: Check var == val
-      // let val = if *var == *val {
-      //   &val
-      // } else {
-      //   &val
-      // };
-      let ty = Box::new(replace(val, with, &ty));
-      let body = Box::new(replace(val, with, &body));
-      Lam(var.clone(), ty, body)
+      if *val == *var {
+        Lam(var.clone(), ty.clone(), body.clone())
+      } else {
+        let ty = Box::new(replace(val, with, &ty));
+        let body = Box::new(replace(val, with, &body));
+        Lam(var.clone(), ty, body)
+      }
     }
     Pi(ref var, ref ty, ref body) => {
-      // TODO: Check var == val
-      let ty = Box::new(replace(val, with, &ty));
-      let body = Box::new(replace(val, with, &body));
-      Pi(var.clone(), ty, body)
+      if *val == *var {
+        Pi(var.clone(), ty.clone(), body.clone())
+      } else {
+        let ty = Box::new(replace(val, with, &ty));
+        let body = Box::new(replace(val, with, &body));
+        Pi(var.clone(), ty, body)
+      }
     }
     App(ref f, ref arg) => {
       let f = Box::new(replace(val, with, &f));
       let arg = Box::new(replace(val, with, &arg));
       App(f, arg)
     }
+  }
+}
+
+fn find_first_var(body: &Expr) -> Var {
+  use Expr::*;
+  match *body {
+    Const(ref constant) => panic!("constant"),
+    Var(ref var) => var.clone(),
+    Lam(ref var, ref ty, ref body) => var.clone(),
+    Pi(ref var, ref ty, ref body) => var.clone(),
+    App(ref f, ref arg) => find_first_var(f),
   }
 }
 
@@ -198,14 +214,18 @@ impl Normalize for Expr {
         p.clone()
       }
       App(ref f, ref arg) => {
-        let f = f.normalize();
+        // let f = f.normalize();
+        let f = *f.clone();
         let arg = arg.normalize();
         if let Lam(var, ty, body) = f {
-          replace(&var, &arg, &body)
+          replace(&var, &arg, &body).normalize()
         } else if let Pi(var, ty, body) = f {
-          replace(&var, &arg, &body)
+          replace(&var, &arg, &body).normalize()
+        } else if let App(ref f_in, ref arg_in) = f {
+          replace(&find_first_var(&f_in), &arg_in, &f_in).normalize()
         } else {
           panic!("f isn't a function {}", f.to_string())
+          // replace
         }
       }
     }
@@ -287,6 +307,10 @@ fn main() {
   //
   // -- id
   // (\(a : *) -> \(x : a) -> x)
+
+  // ∀(a : *) → a → a
+  //
+  // λ(a : *) → λ(x : a) → x
 
   let a = Var::new("a", 0);
   let x = Var::new("x", 0);
