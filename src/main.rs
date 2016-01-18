@@ -36,6 +36,13 @@ impl Var {
       idx: idx,
     }
   }
+
+  pub fn shift(&self) -> Var {
+    Var {
+      name: self.name.clone(),
+      idx: self.idx + 1,
+    }
+  }
 }
 
 impl Normalize for Var {
@@ -46,7 +53,9 @@ impl Normalize for Var {
 
 impl ToString for Var {
   fn to_string(&self) -> String {
-    if self.idx == 0 {
+    if self.name.len() == 0 {
+      "".to_string()
+    } else if self.idx == 0 {
       self.name.clone()
     } else {
       self.name.clone() + "@" + &self.idx.to_string()
@@ -146,6 +155,11 @@ fn replace(val: &Var, with: &Expr, body: &Expr) -> Expr {
     }
     Lam(ref var, ref ty, ref body) => {
       // TODO: Check var == val
+      // let val = if *var == *val {
+      //   &val
+      // } else {
+      //   &val
+      // };
       let ty = Box::new(replace(val, with, &ty));
       let body = Box::new(replace(val, with, &body));
       Lam(var.clone(), ty, body)
@@ -205,40 +219,99 @@ impl ToString for Expr {
       Const(ref constant) => constant.to_string(),
       Var(ref var) => var.to_string(),
       Lam(ref var, ref ty, ref body) => {
-        "(".to_string() + &var.to_string() + " : " + &ty.to_string() + ") -> " +
-        &body.to_string()
+        let vars = var.to_string();
+        if vars.len() == 0 {
+          ty.to_string() + " -> " + &body.to_string()
+        } else {
+          "(".to_string() + &var.to_string() + " : " + &ty.to_string() +
+          ") -> " + &body.to_string()
+        }
       }
       Pi(ref var, ref ty, ref body) => {
-        "forall (".to_string() + &var.to_string() + " : " + &ty.to_string() +
-        ") -> " + &body.to_string()
+        let vars = var.to_string();
+        if vars.len() == 0 {
+          "forall (".to_string() + &ty.to_string() + ") -> " + &body.to_string()
+        } else {
+          "forall (".to_string() + &var.to_string() + " : " +
+          &ty.to_string() + ") -> " + &body.to_string()
+        }
       }
       App(ref f, ref arg) => {
+        let mut s = String::new();
         if f.is_lam() || f.is_pi() {
-          "(".to_string() + &f.to_string() + ") " + &arg.to_string()
+          s.push('(');
+          s.push_str(&f.to_string()[..]);
+          s.push(')');
         } else {
-          f.to_string() + " " + &arg.to_string()
+          s.push_str(&f.to_string()[..]);
         }
+        s.push(' ');
+        if arg.is_lam() || arg.is_pi() {
+          s.push('(');
+          s.push_str(&arg.to_string()[..]);
+          s.push(')');
+        } else {
+          s.push_str(&arg.to_string()[..]);
+        }
+        // + " ".to_string() + (if arg.is_lam() || arg.is_pi() {
+        //   "(".to_string() + &arg.to_string() + ")"
+        // } else {
+        //   &arg.to_string()
+        // })
+        s
       }
     }
   }
 }
 
 fn main() {
-  println!("{}", Const::Data.to_string());
+  // println!("{}", Const::Data.to_string());
+  // let a = Var::new("a", 0);
+  // let x = Var::new("x", 0);
+  // let expra = var(&a);
+  // let exprx = var(&x);
+  // println!("{}", x.to_string());
+  // let id = pi(a.clone(), constant(Const::Data), lam(x, expra, exprx));
+  // println!("{}", id.to_string());
+  // println!("{}", id.normalize().to_string());
+  // let apply_int = app(id.clone(), var(&Var::new("int", 0)));
+  // println!("{}", apply_int.to_string());
+  // println!("{}", apply_int.normalize().to_string());
+  // let apply_id = app(app(id, var(&Var::new("int", 0))), var(&Var::new("1", 0)));
+  // println!("{}", apply_id.to_string());
+  // println!("{}", apply_id.normalize().to_string());
+
+  // (   \(id : forall (a : *) -> a -> a)
+  // ->  id (forall (a : *) -> a -> a) id  -- Apply the identity function to itself
+  // )
+  //
+  // -- id
+  // (\(a : *) -> \(x : a) -> x)
+
   let a = Var::new("a", 0);
   let x = Var::new("x", 0);
-  let expra = var(&a);
-  let exprx = var(&x);
-  println!("{}", x.to_string());
-  let id = pi(a.clone(), constant(Const::Data), lam(x, expra, exprx));
-  println!("{}", id.to_string());
-  println!("{}", id.normalize().to_string());
-  let apply_int = app(id.clone(), var(&Var::new("int", 0)));
-  println!("{}", apply_int.to_string());
-  println!("{}", apply_int.normalize().to_string());
-  let apply_id = app(app(id, var(&Var::new("int", 0))), var(&Var::new("1", 0)));
-  println!("{}", apply_id.to_string());
-  println!("{}", apply_id.normalize().to_string());
+  let id = Var::new("id", 0);
+  let unused = Var::new("", 0);
+  let ty = pi(a.clone(),
+              constant(Const::Data),
+              lam(unused, Expr::var(&a), Expr::var(&a)));
+  println!("{}", ty.to_string());
+  let id_impl = pi(a.clone(),
+                   constant(Const::Data),
+                   lam(x.clone(), Expr::var(&a), Expr::var(&x)));
+  println!("{}", id_impl.to_string());
+  let id2 = lam(id.clone(),
+                ty.clone(),
+                app(app(Expr::var(&id.clone()), ty.clone()),
+                    Expr::var(&id.clone())));
+  println!("{}", id2.to_string());
+  let id2app = app(lam(id.clone(),
+                       ty.clone(),
+                       app(app(Expr::var(&id.clone()), ty.clone()),
+                           Expr::var(&id.clone()))),
+                   id_impl.clone());
+  println!("{}", id2app.to_string());
+  println!("{}", id2app.normalize().to_string());
 }
 
 #[test]
