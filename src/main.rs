@@ -133,44 +133,41 @@ fn app(f: Expr, arg: Expr) -> Expr {
   Expr::app(f, arg)
 }
 
-fn replace(val: &Var, with: &Expr, body: &Box<Expr>) -> Expr {
+fn replace(val: &Var, with: &Expr, body: &Expr) -> Expr {
   use Expr::*;
-  println!("replacing {} with {} in {}",
-           val.to_string(),
-           with.to_string(),
-           body.to_string());
-  // *body.clone()
-  match **body {
-    Const(ref constant) => *body.clone(), //Const(constant),
+  match *body {
+    Const(ref constant) => body.clone(),
     Var(ref var) => {
-      println!("replacing var");
-      if var.to_string() == val.to_string() {
-        println!("  eq -> replacing");
+      if *var == *val {
         with.clone()
       } else {
-        println!("  no change");
-        Var(var.clone())
+        body.clone()
       }
     }
     Lam(ref var, ref ty, ref body) => {
-      // println!("  lam");
-      let ty = Box::new(replace(val, &with.clone(), &ty));
-      // let body = Box::new(replace(val, with, &body));
-      Lam(var.clone(), ty.clone(), body.clone())
-      // panic!("Lam")
-      // Lam(var.clone(),
-      //     Box::new(replace(val.clone(), with.clone(), ty.clone())),
-      //     Box::new(replace(val.clone(), with.clone(), body.clone())))
+      // TODO: Check var == val
+      let ty = Box::new(replace(val, with, &ty));
+      let body = Box::new(replace(val, with, &body));
+      Lam(var.clone(), ty, body)
     }
-    Pi(ref var, ref ty, ref body) => panic!("Pi"),
-    App(ref f, ref arg) => panic!("App"), //replace(val, with, f.clone()),
+    Pi(ref var, ref ty, ref body) => {
+      // TODO: Check var == val
+      let ty = Box::new(replace(val, with, &ty));
+      let body = Box::new(replace(val, with, &body));
+      Pi(var.clone(), ty, body)
+    }
+    App(ref f, ref arg) => {
+      let f = Box::new(replace(val, with, &f));
+      let arg = Box::new(replace(val, with, &arg));
+      App(f, arg)
+    }
   }
 }
 
 impl Normalize for Expr {
   fn normalize(&self) -> Expr {
     use Expr::*;
-    println!("normalize {}", self.to_string());
+    // println!("normalize {}", self.to_string());
     match *self {
       Const(ref constant) => Const(constant.normalize()),
       Var(ref var) => Var(var.normalize()),
@@ -191,7 +188,6 @@ impl Normalize for Expr {
         let arg = arg.normalize();
         if let Lam(var, ty, body) = f {
           replace(&var, &arg, &body)
-          // Lam(var, ty, body)
         } else if let Pi(var, ty, body) = f {
           replace(&var, &arg, &body)
         } else {
@@ -236,7 +232,9 @@ fn main() {
   println!("{}", x.to_string());
   let id = pi(a.clone(), constant(Const::Data), lam(x, expra, exprx));
   println!("{}", id.to_string());
+  println!("{}", id.normalize().to_string());
   let apply_int = app(id.clone(), var(&Var::new("int", 0)));
+  println!("{}", apply_int.to_string());
   println!("{}", apply_int.normalize().to_string());
   let apply_id = app(app(id, var(&Var::new("int", 0))), var(&Var::new("1", 0)));
   println!("{}", apply_id.to_string());
