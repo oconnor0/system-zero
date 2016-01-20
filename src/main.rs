@@ -346,13 +346,26 @@ fn main() {
   println!("{}", if_true.to_string());
 
   let program = if_true;
-  let execute = app(app(app(app(program, impl_bool), impl_true), impl_false),
-                    impl_if);
+  let execute = app(app(app(app(program, impl_bool.clone()),
+                            impl_true.clone()),
+                        impl_false.clone()),
+                    impl_if.clone());
   println!("{}", execute.to_string());
   println!("");
 
   let result = execute.normalize();
-  println!("{}", result.to_string());
+  println!("= {}", result.to_string());
+  println!("");
+
+  let p2 = lam(v_true.clone(),
+               ty_true.clone(),
+               app(app(app(var(&v_true), var(&v_nat)), var(&v_1)), var(&v_0)));
+  println!("{}", p2.to_string());
+
+  let r2 = app(p2, impl_true);
+  println!("{}", r2.to_string());
+  println!("");
+  println!("= {}", r2.normalize().to_string());
 }
 
 #[test]
