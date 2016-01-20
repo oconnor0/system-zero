@@ -3,7 +3,7 @@ system zero - a total dependently-typed functional programming language
 bool : data.
 true : bool.
 false : bool.
-if : bool -> forall (r : data) -> r -> r ->.
+if : bool -> forall (r : data) -> r -> r -> r.
 
 bool = forall (r : data) -> r -> r -> r.
 true r x _ = x.

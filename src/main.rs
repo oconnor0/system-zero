@@ -225,7 +225,6 @@ impl Normalize for Expr {
           replace(&find_first_var(&f_in), &arg_in, &f_in).normalize()
         } else {
           panic!("f isn't a function {}", f.to_string())
-          // replace
         }
       }
     }
@@ -273,11 +272,6 @@ impl ToString for Expr {
         } else {
           s.push_str(&arg.to_string()[..]);
         }
-        // + " ".to_string() + (if arg.is_lam() || arg.is_pi() {
-        //   "(".to_string() + &arg.to_string() + ")"
-        // } else {
-        //   &arg.to_string()
-        // })
         s
       }
     }
@@ -285,57 +279,80 @@ impl ToString for Expr {
 }
 
 fn main() {
-  // println!("{}", Const::Data.to_string());
-  // let a = Var::new("a", 0);
-  // let x = Var::new("x", 0);
-  // let expra = var(&a);
-  // let exprx = var(&x);
-  // println!("{}", x.to_string());
-  // let id = pi(a.clone(), constant(Const::Data), lam(x, expra, exprx));
-  // println!("{}", id.to_string());
-  // println!("{}", id.normalize().to_string());
-  // let apply_int = app(id.clone(), var(&Var::new("int", 0)));
-  // println!("{}", apply_int.to_string());
-  // println!("{}", apply_int.normalize().to_string());
-  // let apply_id = app(app(id, var(&Var::new("int", 0))), var(&Var::new("1", 0)));
-  // println!("{}", apply_id.to_string());
-  // println!("{}", apply_id.normalize().to_string());
-
-  // (   \(id : forall (a : *) -> a -> a)
-  // ->  id (forall (a : *) -> a -> a) id  -- Apply the identity function to itself
-  // )
-  //
-  // -- id
-  // (\(a : *) -> \(x : a) -> x)
-
-  // ∀(a : *) → a → a
-  //
-  // λ(a : *) → λ(x : a) → x
-
-  let a = Var::new("a", 0);
-  let x = Var::new("x", 0);
-  let id = Var::new("id", 0);
+  let v_bool = Var::new("bool", 0);
+  let v_true = Var::new("true", 0);
+  let v_false = Var::new("false", 0);
+  let v_if = Var::new("if", 0);
+  let v_b = Var::new("b", 0);
+  let v_r = Var::new("r", 0);
+  let v_x = Var::new("x", 0);
+  let v_y = Var::new("y", 0);
+  let v_0 = Var::new("0", 0);
+  let v_1 = Var::new("1", 0);
+  let v_nat = Var::new("nat", 0);
   let unused = Var::new("", 0);
-  let ty = pi(a.clone(),
-              constant(Const::Data),
-              lam(unused, Expr::var(&a), Expr::var(&a)));
-  println!("{}", ty.to_string());
-  let id_impl = pi(a.clone(),
-                   constant(Const::Data),
-                   lam(x.clone(), Expr::var(&a), Expr::var(&x)));
-  println!("{}", id_impl.to_string());
-  let id2 = lam(id.clone(),
-                ty.clone(),
-                app(app(Expr::var(&id.clone()), ty.clone()),
-                    Expr::var(&id.clone())));
-  println!("{}", id2.to_string());
-  let id2app = app(lam(id.clone(),
-                       ty.clone(),
-                       app(app(Expr::var(&id.clone()), ty.clone()),
-                           Expr::var(&id.clone()))),
-                   id_impl.clone());
-  println!("{}", id2app.to_string());
-  println!("{}", id2app.normalize().to_string());
+
+  let ty_bool = constant(Const::Data);
+  println!("bool : {}.", ty_bool.to_string());
+  let ty_true = var(&v_bool);
+  println!("true : {}.", ty_true.to_string());
+  let ty_false = var(&v_bool);
+  println!("false : {}.", ty_false.to_string());
+  let ty_if = lam(unused.clone(),
+                  var(&v_bool),
+                  pi(v_r.clone(),
+                     constant(Const::Data),
+                     lam(unused.clone(),
+                         var(&v_r),
+                         lam(unused.clone(), var(&v_r), var(&v_r)))));
+  println!("if : {}.", ty_if.to_string());
+  println!("");
+
+  let impl_bool = pi(v_r.clone(),
+                     constant(Const::Data),
+                     lam(unused.clone(),
+                         var(&v_r),
+                         lam(unused.clone(), var(&v_r), var(&v_r))));
+  println!("bool = {}.", impl_bool.to_string());
+  let impl_true = pi(v_r.clone(),
+                     constant(Const::Data),
+                     lam(v_x.clone(),
+                         var(&v_r),
+                         lam(unused.clone(), var(&v_r), var(&v_x))));
+  println!("true = {}.", impl_true.to_string());
+  let impl_false = pi(v_r.clone(),
+                      constant(Const::Data),
+                      lam(unused.clone(),
+                          var(&v_r),
+                          lam(v_y.clone(), var(&v_r), var(&v_y))));
+  println!("false = {}.", impl_false.to_string());
+  let impl_if = lam(v_b.clone(), var(&v_bool), var(&v_b));
+  println!("if = {}.", impl_if.to_string());
+  println!("");
+
+  let if_true = lam(v_bool.clone(),
+                    ty_bool.clone(),
+                    lam(v_true.clone(),
+                        ty_true.clone(),
+                        lam(v_false.clone(),
+                            ty_false.clone(),
+                            lam(v_if.clone(),
+                                ty_if.clone(),
+                                app(app(app(app(var(&v_if),
+                                                var(&v_true)),
+                                            var(&v_nat)),
+                                        var(&v_1)),
+                                    var(&v_0))))));
+  println!("{}", if_true.to_string());
+
+  let program = if_true;
+  let execute = app(app(app(app(program, impl_bool), impl_true), impl_false),
+                    impl_if);
+  println!("{}", execute.to_string());
+  println!("");
+
+  let result = execute.normalize();
+  println!("{}", result.to_string());
 }
 
 #[test]
