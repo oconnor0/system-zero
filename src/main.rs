@@ -159,26 +159,34 @@ fn replace(val: &Var, with: &Expr, body: &Expr) -> Expr {
     }
     Lam(ref var, ref ty, ref body) => {
       if *val == *var {
+        // println!("stopping at {}", val.to_string());
         Lam(var.clone(), ty.clone(), body.clone())
       } else {
         let ty = Box::new(replace(val, with, &ty));
         let body = Box::new(replace(val, with, &body));
-        Lam(var.clone(), ty, body)
+        let lam = Lam(var.clone(), ty, body);
+        // println!("replaced = {}", lam.to_string());
+        lam
       }
     }
     Pi(ref var, ref ty, ref body) => {
       if *val == *var {
+        // println!("stopping at {}", val.to_string());
         Pi(var.clone(), ty.clone(), body.clone())
       } else {
         let ty = Box::new(replace(val, with, &ty));
         let body = Box::new(replace(val, with, &body));
-        Pi(var.clone(), ty, body)
+        let pi = Pi(var.clone(), ty, body);
+        // println!("replaced = {}", pi.to_string());
+        pi
       }
     }
     App(ref f, ref arg) => {
       let f = Box::new(replace(val, with, &f));
       let arg = Box::new(replace(val, with, &arg));
-      App(f, arg)
+      let app = App(f, arg);
+      // println!("replaced = {}", app.to_string());
+      app
     }
   }
 }
@@ -214,17 +222,24 @@ impl Normalize for Expr {
         p.clone()
       }
       App(ref f, ref arg) => {
-        // let f = f.normalize();
-        let f = *f.clone();
+        let f = f.normalize();
+        // let f = *f.clone();
         let arg = arg.normalize();
         if let Lam(var, _, body) = f {
-          replace(&var, &arg, &body).normalize()
+          let lam = replace(&var, &arg, &body).normalize();
+          // println!("normalized = {}", lam.to_string());
+          lam
         } else if let Pi(var, _, body) = f {
-          replace(&var, &arg, &body).normalize()
-        } else if let App(ref f_in, ref arg_in) = f {
-          replace(&find_first_var(&f_in), &arg_in, &f_in).normalize()
+          let pi = replace(&var, &arg, &body).normalize();
+          // println!("normalized = {}", pi.to_string());
+          pi
+        // } else if let App(ref f_in, ref arg_in) = f {
+        //   let app = replace(&find_first_var(&f_in), &arg_in, &f_in).normalize();
+        //   println!("normalized = {}", app.to_string());
+        //   app
         } else {
-          panic!("f isn't a function {}", f.to_string())
+          // panic!("f isn't a function {}", f.to_string())
+          App(Box::new(f), Box::new(arg))
         }
       }
     }
@@ -357,12 +372,12 @@ fn main() {
   println!("= {}", result.to_string());
   println!("");
 
-  let p2 = lam(v_true.clone(),
-               ty_true.clone(),
-               app(app(app(var(&v_true), var(&v_nat)), var(&v_1)), var(&v_0)));
+  let p2 = lam(v_false.clone(),
+               ty_false.clone(),
+               app(app(app(var(&v_false), var(&v_nat)), var(&v_1)), var(&v_0)));
   println!("{}", p2.to_string());
 
-  let r2 = app(p2, impl_true);
+  let r2 = app(p2, impl_false);
   println!("{}", r2.to_string());
   println!("");
   println!("= {}", r2.normalize().to_string());
