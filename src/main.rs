@@ -149,7 +149,7 @@ fn replace(val: &Var, with: &Expr, body: &Expr) -> Expr {
   //          with.to_string(),
   //          body.to_string());
   match *body {
-    Const(ref constant) => body.clone(),
+    Const(_) => body.clone(),
     Var(ref var) => {
       if *var == *val {
         with.clone()
@@ -186,11 +186,11 @@ fn replace(val: &Var, with: &Expr, body: &Expr) -> Expr {
 fn find_first_var(body: &Expr) -> Var {
   use Expr::*;
   match *body {
-    Const(ref constant) => panic!("constant"),
+    Const(_) => panic!("constant"),
     Var(ref var) => var.clone(),
-    Lam(ref var, ref ty, ref body) => var.clone(),
-    Pi(ref var, ref ty, ref body) => var.clone(),
-    App(ref f, ref arg) => find_first_var(f),
+    Lam(ref var, _, _) => var.clone(),
+    Pi(ref var, _, _) => var.clone(),
+    App(ref f, _) => find_first_var(f),
   }
 }
 
@@ -217,9 +217,9 @@ impl Normalize for Expr {
         // let f = f.normalize();
         let f = *f.clone();
         let arg = arg.normalize();
-        if let Lam(var, ty, body) = f {
+        if let Lam(var, _, body) = f {
           replace(&var, &arg, &body).normalize()
-        } else if let Pi(var, ty, body) = f {
+        } else if let Pi(var, _, body) = f {
           replace(&var, &arg, &body).normalize()
         } else if let App(ref f_in, ref arg_in) = f {
           replace(&find_first_var(&f_in), &arg_in, &f_in).normalize()
@@ -341,19 +341,38 @@ fn main() {
 #[test]
 fn test_to_string() {
   let codata = Const::Codata;
-  println!("{}", codata.to_string());
   assert_eq!("codata", codata.to_string());
   let a = Var::new("a", 0);
   let x = Var::new("x", 0);
   let expra = var(&a);
   let exprx = var(&x);
-  println!("{}", x.to_string());
   assert_eq!("x", x.to_string());
   let id = pi(a.clone(), constant(Const::Data), lam(x, expra, exprx));
-  println!("{}", id.to_string());
   assert_eq!("forall (a : data) -> (x : a) -> x", id.to_string());
   let apply_id = app(app(id, var(&Var::new("int", 0))), var(&Var::new("1", 0)));
-  println!("{}", apply_id.to_string());
   assert_eq!("(forall (a : data) -> (x : a) -> x) int 1",
              apply_id.to_string());
+}
+
+#[test]
+fn test_id_eq_id2() {
+  let a = Var::new("a", 0);
+  let x = Var::new("x", 0);
+  let id = Var::new("id", 0);
+  let unused = Var::new("", 0);
+  // id's type
+  let ty = pi(a.clone(),
+              constant(Const::Data),
+              lam(unused, Expr::var(&a), Expr::var(&a)));
+  // id's implementation
+  let id_impl = pi(a.clone(),
+                   constant(Const::Data),
+                   lam(x.clone(), Expr::var(&a), Expr::var(&x)));
+  // implementation of id applied to itself applied to id
+  let id2app = app(lam(id.clone(),
+                       ty.clone(),
+                       app(app(Expr::var(&id.clone()), ty.clone()),
+                           Expr::var(&id.clone()))),
+                   id_impl.clone());
+  assert_eq!(id2app.normalize(), id_impl);
 }
