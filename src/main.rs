@@ -233,10 +233,10 @@ impl Normalize for Expr {
           let pi = replace(&var, &arg, &body).normalize();
           // println!("normalized = {}", pi.to_string());
           pi
-        // } else if let App(ref f_in, ref arg_in) = f {
-        //   let app = replace(&find_first_var(&f_in), &arg_in, &f_in).normalize();
-        //   println!("normalized = {}", app.to_string());
-        //   app
+          // } else if let App(ref f_in, ref arg_in) = f {
+          //   let app = replace(&find_first_var(&f_in), &arg_in, &f_in).normalize();
+          //   println!("normalized = {}", app.to_string());
+          //   app
         } else {
           // panic!("f isn't a function {}", f.to_string())
           App(Box::new(f), Box::new(arg))
@@ -280,7 +280,7 @@ impl ToString for Expr {
           s.push_str(&f.to_string()[..]);
         }
         s.push(' ');
-        if arg.is_lam() || arg.is_pi() {
+        if arg.is_lam() || arg.is_pi() || arg.is_app() {
           s.push('(');
           s.push_str(&arg.to_string()[..]);
           s.push(')');
@@ -305,6 +305,10 @@ fn main() {
   let v_0 = Var::new("0", 0);
   let v_1 = Var::new("1", 0);
   let v_nat = Var::new("nat", 0);
+  let v_and = Var::new("and", 0);
+  let v_or = Var::new("or", 0);
+  let v_xor = Var::new("xor", 0);
+  let v_not = Var::new("not", 0);
   let unused = Var::new("", 0);
 
   let ty_bool = constant(Const::Data);
@@ -366,7 +370,6 @@ fn main() {
                         impl_false.clone()),
                     impl_if.clone());
   println!("{}", execute.to_string());
-  println!("");
 
   let result = execute.normalize();
   println!("= {}", result.to_string());
@@ -377,10 +380,52 @@ fn main() {
                app(app(app(var(&v_false), var(&v_nat)), var(&v_1)), var(&v_0)));
   println!("{}", p2.to_string());
 
-  let r2 = app(p2, impl_false);
+  let r2 = app(p2, impl_false.clone());
   println!("{}", r2.to_string());
-  println!("");
   println!("= {}", r2.normalize().to_string());
+  println!("");
+
+  let ty_and = lam(unused.clone(),
+                   var(&v_bool),
+                   lam(unused.clone(), var(&v_bool), var(&v_bool)));
+  println!("and : {}.", ty_and.to_string());
+  // TODO: Does this need to be applied to if?
+  let impl_and = app(lam(v_if.clone(),
+                         ty_if.clone(),
+                         lam(v_x.clone(),
+                             var(&v_bool),
+                             lam(v_y.clone(),
+                                 var(&v_bool),
+                                 app(app(app(app(var(&v_if), var(&v_x)),
+                                             var(&v_bool)),
+                                         var(&v_y)),
+                                     var(&v_false))))),
+                     impl_if.clone());
+  println!("and = {}.", impl_and.to_string());
+  println!("");
+
+  let and_prog = lam(v_bool.clone(),
+                     ty_bool.clone(),
+                     lam(v_true.clone(),
+                         ty_true.clone(),
+                         lam(v_false.clone(),
+                             ty_false.clone(),
+                             lam(v_if.clone(),
+                                 ty_if.clone(),
+                                 lam(v_and.clone(),
+                                     ty_and.clone(),
+                                     app(app(var(&v_and),
+                                             // var(&v_if)),
+                                             var(&v_true)),
+                                         var(&v_false)))))));
+  // println!("{}", and_prog.to_string());
+  let run_and_prog = app(app(app(app(app(and_prog, impl_bool.clone()),
+                                     impl_true.clone()),
+                                 impl_false.clone()),
+                             impl_if.clone()),
+                         impl_and.clone());
+  println!("{}", run_and_prog.to_string());
+  println!("= {}", run_and_prog.normalize().to_string());
 }
 
 #[test]
