@@ -1,9 +1,14 @@
 [root]
 name = "system-zero"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
+ "core 0.0.1",
  "itertools 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
+
+[[package]]
+name = "core"
+version = "0.0.1"
 
 [[package]]
 name = "itertools"
