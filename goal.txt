@@ -28,3 +28,26 @@ xor x y = if x bool (not y) y.
 
 ((1 : int) -> 1)
 1
+
+-- the below types may be useful
+forall a. a -> a.
+exists b. b -> b.
+
+forall a. free f a
+
+
+list : (a : data) -> data.
+nil : list a.
+cons : a -> list a -> list a.
+
+head : cons a (list a) -> a.
+tail : cons a (list a) -> list a.
+
+map : (a -> b) -> list a -> list b.
+zip : (a -> b -> c) -> list a -> list b -> list c.
+foldr : (a -> b -> b) -> b -> list a -> b.
+foldl : (b -> a -> b) -> b -> list a -> b.
+
+stream : (a : data) -> codata.
+nil : stream a.
+cons : a -> stream a -> stream a.
