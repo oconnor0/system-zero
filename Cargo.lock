@@ -3,12 +3,14 @@ name = "system-zero"
 version = "0.0.1"
 dependencies = [
  "core 0.0.1",
- "itertools 0.4.7 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "core"
 version = "0.0.1"
+dependencies = [
+ "itertools 0.4.7 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [[package]]
 name = "itertools"
