@@ -2,3 +2,6 @@
 name = "core"
 version = "0.0.1"
 authors = ["Matthew O'Connor <thegreendragon@gmail.com>"]
+
+[dependencies]
+itertools = "0.4.7"

@@ -191,16 +191,16 @@ fn replace(val: &Var, with: &Expr, body: &Expr) -> Expr {
   }
 }
 
-fn find_first_var(body: &Expr) -> Var {
-  use self::Expr::*;
-  match *body {
-    Const(_) => panic!("constant"),
-    Var(ref var) => var.clone(),
-    Lam(ref var, _, _) => var.clone(),
-    Pi(ref var, _, _) => var.clone(),
-    App(ref f, _) => find_first_var(f),
-  }
-}
+// fn find_first_var(body: &Expr) -> Var {
+//   use self::Expr::*;
+//   match *body {
+//     Const(_) => panic!("constant"),
+//     Var(ref var) => var.clone(),
+//     Lam(ref var, _, _) => var.clone(),
+//     Pi(ref var, _, _) => var.clone(),
+//     App(ref f, _) => find_first_var(f),
+//   }
+// }
 
 impl Normalize for Expr {
   fn normalize(&self) -> Expr {
