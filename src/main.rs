@@ -97,41 +97,37 @@ fn main() {
                    var(&v_bool),
                    lam(unused.clone(), var(&v_bool), var(&v_bool)));
   println!("and : {}.", ty_and.to_string());
-  // TODO: Does this need to be applied to if?
-  let impl_and = app(lam(v_if.clone(),
-                         ty_if.clone(),
-                         lam(v_x.clone(),
-                             var(&v_bool),
-                             lam(v_y.clone(),
-                                 var(&v_bool),
-                                 app(app(app(app(var(&v_if), var(&v_x)),
-                                             var(&v_bool)),
-                                         var(&v_y)),
-                                     var(&v_false))))),
-                     impl_if.clone());
+  let impl_and = lam(v_x.clone(),
+                     var(&v_bool),
+                     lam(v_y.clone(),
+                         var(&v_bool),
+                         app(app(app(app(var(&v_if), var(&v_x)),
+                                     var(&v_bool)),
+                                 var(&v_y)),
+                             var(&v_false))));
   println!("and = {}.", impl_and.to_string());
   println!("");
 
-  let and_prog = lam(v_bool.clone(),
-                     ty_bool.clone(),
-                     lam(v_true.clone(),
-                         ty_true.clone(),
-                         lam(v_false.clone(),
-                             ty_false.clone(),
-                             lam(v_if.clone(),
-                                 ty_if.clone(),
-                                 lam(v_and.clone(),
-                                     ty_and.clone(),
-                                     app(app(var(&v_and),
-                                             // var(&v_if)),
-                                             var(&v_true)),
-                                         var(&v_false)))))));
-  // println!("{}", and_prog.to_string());
-  let run_and_prog = app(app(app(app(app(and_prog, impl_bool.clone()),
-                                     impl_true.clone()),
-                                 impl_false.clone()),
-                             impl_if.clone()),
-                         impl_and.clone());
-  println!("{}", run_and_prog.to_string());
-  println!("= {}", run_and_prog.normalize().to_string());
+  let and_prog = lam(v_and.clone(),
+                     ty_and.clone(),
+                     app(app(var(&v_and), var(&v_true)), var(&v_false)));
+  let and_prog_app = app(and_prog.clone(), impl_and.clone());
+  println!("{}", and_prog_app.to_string());
+
+  let ctx_bool_with_and = app(app(app(app(lam(v_bool.clone(),
+                                              ty_bool.clone(),
+                                              lam(v_true.clone(),
+                                                  ty_true.clone(),
+                                                  lam(v_false.clone(),
+                                                      ty_false.clone(),
+                                                      lam(v_if.clone(),
+                                                          ty_if.clone(),
+                                                          and_prog_app)))),
+                                          impl_bool.clone()),
+                                      impl_true.clone()),
+                                  impl_false.clone()),
+                              impl_if.clone());
+  println!("{}", ctx_bool_with_and.to_string());
+  println!("and true false = {}.", ctx_bool_with_and.normalize().to_string());
+  println!("");
 }
