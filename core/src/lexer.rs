@@ -10,6 +10,7 @@ pub enum Token {
   Dot,
   Colon,
   Equal,
+  ForAll,
   Variable(String),
 }
 
@@ -22,6 +23,7 @@ impl ToString for Token {
       Token::Dot => ".".to_string(),
       Token::Colon => ":".to_string(),
       Token::Equal => "=".to_string(),
+      Token::ForAll => "forall".to_string(),
       Token::Variable(ref name) => name.clone(),
     }
   }
@@ -73,12 +75,16 @@ impl<I: Clone + Iterator<Item = char>> Iterator for Lexer<I> {
         }
       }
       'A'...'Z' | 'a'...'z' | '_' => {
-        Some(Token::Variable(self.iter
-                                 .take_while_ref(|&c| {
-                                   c.is_lowercase() || c.is_uppercase() ||
-                                   c == '_'
-                                 })
-                                 .collect::<String>()))
+        let name = self.iter
+                       .take_while_ref(|&c| {
+                         c.is_lowercase() || c.is_uppercase() || c == '_'
+                       })
+                       .collect::<String>();
+        if name == "forall" {
+          Some(Token::ForAll)
+        } else {
+          Some(Token::Variable(name))
+        }
       }
       '\0' => None,
       _ => {
@@ -106,11 +112,12 @@ fn test_to_string() {
 
 #[test]
 fn test_lex() {
-  let mut l = lex("type = id : (a : data) -> a -> a.".chars());
+  let mut l = lex("type = id : forall (a : data) -> a -> a.".chars());
   assert_eq!(l.next(), Some(Token::Variable("type".to_string())));
   assert_eq!(l.next(), Some(Token::Equal));
   assert_eq!(l.next(), Some(Token::Variable("id".to_string())));
   assert_eq!(l.next(), Some(Token::Colon));
+  assert_eq!(l.next(), Some(Token::ForAll));
   assert_eq!(l.next(), Some(Token::LParen));
   assert_eq!(l.next(), Some(Token::Variable("a".to_string())));
   assert_eq!(l.next(), Some(Token::Colon));
