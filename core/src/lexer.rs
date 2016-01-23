@@ -9,6 +9,7 @@ pub enum Token {
   Arrow,
   Dot,
   Colon,
+  Equal,
   Variable(String),
 }
 
@@ -20,6 +21,7 @@ impl ToString for Token {
       Token::Arrow => "->".to_string(),
       Token::Dot => ".".to_string(),
       Token::Colon => ":".to_string(),
+      Token::Equal => "=".to_string(),
       Token::Variable(ref name) => name.clone(),
     }
   }
@@ -56,6 +58,10 @@ impl<I: Clone + Iterator<Item = char>> Iterator for Lexer<I> {
       '.' => {
         self.iter.next();
         Some(Token::Dot)
+      }
+      '=' => {
+        self.iter.next();
+        Some(Token::Equal)
       }
       '-' => {
         self.iter.next();
@@ -94,12 +100,15 @@ fn test_to_string() {
   assert_eq!("->", Token::Arrow.to_string());
   assert_eq!(".", Token::Dot.to_string());
   assert_eq!(":", Token::Colon.to_string());
+  assert_eq!("=", Token::Equal.to_string());
   assert_eq!("a", Token::Variable("a".to_string()).to_string());
 }
 
 #[test]
 fn test_lex() {
-  let mut l = lex("id : (a : data) -> a -> a.".chars());
+  let mut l = lex("type = id : (a : data) -> a -> a.".chars());
+  assert_eq!(l.next(), Some(Token::Variable("type".to_string())));
+  assert_eq!(l.next(), Some(Token::Equal));
   assert_eq!(l.next(), Some(Token::Variable("id".to_string())));
   assert_eq!(l.next(), Some(Token::Colon));
   assert_eq!(l.next(), Some(Token::LParen));
