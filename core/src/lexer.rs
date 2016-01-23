@@ -32,50 +32,50 @@ impl ToString for Token {
 pub struct Lexer<I>
   where I: Clone + Iterator<Item = char>
 {
-  iter: Peekable<I>,
+  chars: Peekable<I>,
 }
 
 impl<I: Clone + Iterator<Item = char>> Lexer<I> {
   fn new(iter: I) -> Lexer<I> {
-    Lexer { iter: iter.peekable() }
+    Lexer { chars: iter.peekable() }
   }
 }
 
 impl<I: Clone + Iterator<Item = char>> Iterator for Lexer<I> {
   type Item = Token;
   fn next(&mut self) -> Option<Token> {
-    match *self.iter.peek().unwrap_or(&'\0') {
+    match *self.chars.peek().unwrap_or(&'\0') {
       '(' => {
-        self.iter.next();
+        self.chars.next();
         Some(Token::LParen)
       }
       ')' => {
-        self.iter.next();
+        self.chars.next();
         Some(Token::RParen)
       }
       ':' => {
-        self.iter.next();
+        self.chars.next();
         Some(Token::Colon)
       }
       '.' => {
-        self.iter.next();
+        self.chars.next();
         Some(Token::Dot)
       }
       '=' => {
-        self.iter.next();
+        self.chars.next();
         Some(Token::Equal)
       }
       '-' => {
-        self.iter.next();
-        if self.iter.peek().unwrap_or(&'\0') == &'>' {
-          self.iter.next();
+        self.chars.next();
+        if self.chars.peek().unwrap_or(&'\0') == &'>' {
+          self.chars.next();
           Some(Token::Arrow)
         } else {
           None
         }
       }
       'A'...'Z' | 'a'...'z' | '_' => {
-        let name = self.iter
+        let name = self.chars
                        .take_while_ref(|&c| {
                          c.is_lowercase() || c.is_uppercase() || c == '_'
                        })
@@ -88,7 +88,7 @@ impl<I: Clone + Iterator<Item = char>> Iterator for Lexer<I> {
       }
       '\0' => None,
       _ => {
-        self.iter.next();
+        self.chars.next();
         self.next()
       }
     }
