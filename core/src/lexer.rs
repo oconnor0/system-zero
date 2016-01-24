@@ -10,7 +10,7 @@ pub enum Token {
   Dot,
   Colon,
   Equal,
-  ForAll,
+  Forall,
   Variable(String),
 }
 
@@ -23,7 +23,7 @@ impl ToString for Token {
       Token::Dot => ".".to_string(),
       Token::Colon => ":".to_string(),
       Token::Equal => "=".to_string(),
-      Token::ForAll => "forall".to_string(),
+      Token::Forall => "forall".to_string(),
       Token::Variable(ref name) => name.clone(),
     }
   }
@@ -81,7 +81,7 @@ impl<I: Clone + Iterator<Item = char>> Iterator for Lexer<I> {
                        })
                        .collect::<String>();
         if name == "forall" {
-          Some(Token::ForAll)
+          Some(Token::Forall)
         } else {
           Some(Token::Variable(name))
         }
@@ -117,7 +117,7 @@ fn test_lex() {
   assert_eq!(l.next(), Some(Token::Equal));
   assert_eq!(l.next(), Some(Token::Variable("id".to_string())));
   assert_eq!(l.next(), Some(Token::Colon));
-  assert_eq!(l.next(), Some(Token::ForAll));
+  assert_eq!(l.next(), Some(Token::Forall));
   assert_eq!(l.next(), Some(Token::LParen));
   assert_eq!(l.next(), Some(Token::Variable("a".to_string())));
   assert_eq!(l.next(), Some(Token::Colon));
