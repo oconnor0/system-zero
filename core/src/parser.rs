@@ -4,6 +4,33 @@ use std::iter::Peekable;
 use std::result;
 // use itertools::Itertools;
 
+/*
+Informal BNF grammar for System Zero
+
+definition = <variable> <equal> expr <dot>
+           | <variable> <colon> expr <dot>
+
+expr = const
+     | var
+     | lam
+     | pi
+     | app
+     | <lparen> expr <rparen>
+
+const = <variable>("data")
+      | <variable>("codata")
+
+var = <variable>
+
+lam = <lparen> <variable> <colon> expr <rparen> <arrow> expr
+    | expr <arrow> expr
+
+pi = <forall> <lparen> <variable> <colon> expr <rparen> <arrow> expr
+
+app = expr expr
+
+*/
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Const {
   Data,
@@ -12,16 +39,20 @@ pub enum Const {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Var {
-  name: String,
-  idx: i32,
+  name: String
 }
 
 impl Var {
-  pub fn new(name: &str, idx: i32) -> Var {
+  pub fn new(name: &str) -> Var {
     Var {
-      name: name.to_string(),
-      idx: idx,
+      name: name.to_string()
     }
+  }
+}
+
+impl ToString for Var {
+  fn to_string(&self) -> String {
+    self.name.clone()
   }
 }
 
@@ -58,7 +89,7 @@ impl<I: Clone + Iterator<Item = char>> Parser<I> {
       None => Err("eof".to_string()),
       Some(tok) => {
         match *tok {
-          Token::Variable(ref name) => Ok(Tree::Var(Var::new(name, 0))),
+          Token::Variable(ref name) => Ok(Tree::Var(Var::new(name))),
           _ => Err("eof".to_string()),
         }
       }
@@ -72,23 +103,9 @@ pub fn parse<I: Clone + Iterator<Item = char>>(chars: I) -> Result<Tree> {
   parser.parse()
 }
 
-// impl<I: Clone + Iterator<Item = char>> Iterator for Parser<I> {
-//   type Item = Tree;
-//   fn next(&mut self) -> Option<Tree> {
-//     match self.lexer.peek() {
-//       None => None,
-//       Some(tok) => {
-//         match tok {
-//           _ => None,
-//         }
-//       }
-//     }
-//   }
-// }
-
 #[test]
 fn test_app() {
   let p = parse("a b".chars());
   // assert_eq!(p.next(), None);
-  assert_eq!(p.ok().unwrap(), Tree::Var(Var::new("a", 0)));
+  assert_eq!(p.ok().unwrap(), Tree::Var(Var::new("a")));
 }
