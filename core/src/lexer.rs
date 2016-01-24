@@ -11,6 +11,8 @@ pub enum Token {
   Colon,
   Equal,
   Forall,
+  Data,
+  Codata,
   Variable(String),
 }
 
@@ -24,6 +26,8 @@ impl ToString for Token {
       Token::Colon => ":".to_string(),
       Token::Equal => "=".to_string(),
       Token::Forall => "forall".to_string(),
+      Token::Data => "data".to_string(),
+      Token::Codata => "codata".to_string(),
       Token::Variable(ref name) => name.clone(),
     }
   }
@@ -82,6 +86,10 @@ impl<I: Clone + Iterator<Item = char>> Iterator for Lexer<I> {
                        .collect::<String>();
         if name == "forall" {
           Some(Token::Forall)
+        } else if name == "data" {
+          Some(Token::Data)
+        } else if name == "codata" {
+          Some(Token::Codata)
         } else {
           Some(Token::Variable(name))
         }
@@ -107,6 +115,9 @@ fn test_to_string() {
   assert_eq!(".", Token::Dot.to_string());
   assert_eq!(":", Token::Colon.to_string());
   assert_eq!("=", Token::Equal.to_string());
+  assert_eq!("data", Token::Data.to_string());
+  assert_eq!("codata", Token::Codata.to_string());
+  assert_eq!("forall", Token::Forall.to_string());
   assert_eq!("a", Token::Variable("a".to_string()).to_string());
 }
 
@@ -121,7 +132,7 @@ fn test_lex() {
   assert_eq!(l.next(), Some(Token::LParen));
   assert_eq!(l.next(), Some(Token::Variable("a".to_string())));
   assert_eq!(l.next(), Some(Token::Colon));
-  assert_eq!(l.next(), Some(Token::Variable("data".to_string())));
+  assert_eq!(l.next(), Some(Token::Data));
   assert_eq!(l.next(), Some(Token::RParen));
   assert_eq!(l.next(), Some(Token::Arrow));
   assert_eq!(l.next(), Some(Token::Variable("a".to_string())));

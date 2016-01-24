@@ -233,10 +233,6 @@ impl Normalize for Expr {
           let pi = replace(&var, &arg, &body).normalize();
           // println!("normalized = {}", pi.to_string());
           pi
-          // } else if let App(ref f_in, ref arg_in) = f {
-          //   let app = replace(&find_first_var(&f_in), &arg_in, &f_in).normalize();
-          //   println!("normalized = {}", app.to_string());
-          //   app
         } else {
           // panic!("f isn't a function {}", f.to_string())
           App(Box::new(f), Box::new(arg))
