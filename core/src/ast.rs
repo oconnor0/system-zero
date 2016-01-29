@@ -250,17 +250,18 @@ impl ToString for Expr {
       Var(ref var) => var.to_string(),
       Lam(ref var, ref ty, ref body) => {
         let vars = var.to_string();
-        if vars.len() == 0 {
-          ty.to_string() + " -> " + &body.to_string()
-        } else {
-          "(".to_string() + &var.to_string() + " : " + &ty.to_string() +
+        // if vars.len() == 0 {
+        //   "\\".to_string() + &ty.to_string() + " -> " + &body.to_string()
+        // } else {
+          "\\(".to_string() + &var.to_string() + " : " + &ty.to_string() +
           ") -> " + &body.to_string()
-        }
+        // }
       }
       Pi(ref var, ref ty, ref body) => {
         let vars = var.to_string();
         if vars.len() == 0 {
-          "forall (".to_string() + &ty.to_string() + ") -> " + &body.to_string()
+          // "forall (".to_string() +
+          ty.to_string() + " -> " + &body.to_string()
         } else {
           "forall (".to_string() + &var.to_string() + " : " +
           &ty.to_string() + ") -> " + &body.to_string()
