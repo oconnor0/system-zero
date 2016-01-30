@@ -1,0 +1,52 @@
+use std::str::FromStr;
+use ast::{Const, Expr, Var};
+
+grammar; //["LALR(1)"];
+
+// E = constant
+//   | variable
+//   | E E
+//   | forall (variable : E) -> E
+//   | E -> E
+//   | \(variable : E) -> E
+
+pub Expr: Expr<'input> = {
+  r"\\" "(" <v:Variable> ":" <t:Expr> ")" r"->" <b:Expr> =>
+    Expr::Lam(v, Box::new(t), Box::new(b)),
+  "forall" "(" <v:Variable> ":" <t:Expr> ")" r"->" <b:Expr> =>
+    Expr::Pi(v, Box::new(t), Box::new(b)),
+  // <t:Variable> "->" <b:Expr> =>
+  //   Expr::Pi(Var::new("", 0), Box::new(Expr::Var(t)), Box::new(b)),
+  Term => <>,
+  // <e0:Expr> <e1:Expr> => Expr::App(Box::new(e0), Box::new(e1)),
+  // <Variable> => Expr::Var(<>),
+  // <Constant> => Expr::Const(<>),
+  // <e0:Application> <e1:Expr> => Expr::App(Box::new(e0), Box::new(e1)),
+  // <e0:Expr> <e1:Application> => Expr::App(Box::new(e0), Box::new(e1)),
+};
+
+// E = E E
+//
+// a b c
+// a (b c)
+// (a b) c
+
+// App: Expr<'input> = {
+//   <Variable> => Expr::Var(<>),
+//   "(" <Expr> ")" => <>,
+// };
+
+Term: Expr<'input> = {
+  "(" <Expr> ")" => <>,
+  <Variable> => Expr::Var(<>),
+  <Constant> => Expr::Const(<>),
+};
+
+Variable: Var<'input> = {
+  <r"[a-zA-Z_]+[a-zA-Z_0-9]*"> => Var::new(<>, 0)
+};
+
+Constant: Const = {
+  "data" => Const::Data,
+  "codata" => Const::Codata,
+};
