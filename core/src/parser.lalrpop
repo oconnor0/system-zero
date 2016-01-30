@@ -18,7 +18,7 @@ pub Expr: Expr<'input> = {
   <t:Variable> "->" <b:Expr> =>
     Expr::Pi(Var::new("", 0), Box::new(Expr::Var(t)), Box::new(b)),
   Term => <>,
-  // <e0:Expr> <e1:Expr> => Expr::App(Box::new(e0), Box::new(e1)),
+  // <e0:Expr> <e1:Variable> => Expr::App(Box::new(e0), Box::new(Expr::Var(e1))),
   // <Variable> => Expr::Var(<>),
   // <Constant> => Expr::Const(<>),
   // <e0:Application> <e1:Expr> => Expr::App(Box::new(e0), Box::new(e1)),
