@@ -15,8 +15,12 @@ pub Expr: Expr<'input> = {
     Expr::Lam(v, Box::new(t), Box::new(b)),
   "forall" "(" <v:Variable> ":" <t:Expr> ")" "->" <b:Expr> =>
     Expr::Pi(v, Box::new(t), Box::new(b)),
-  <t:Variable> "->" <b:Expr> =>
-    Expr::Pi(Var::new("", 0), Box::new(Expr::Var(t)), Box::new(b)),
+  <t:Term> "->" <b:Expr> =>
+    Expr::Pi(Var::new("", 0), Box::new(t), Box::new(b)),
+
+  // This works out backwards.
+  <t:Term> <b:Expr> => Expr::App(Box::new(t), Box::new(b)),
+
   Term => <>,
   // <e0:Expr> <e1:Variable> => Expr::App(Box::new(e0), Box::new(Expr::Var(e1))),
   // <Variable> => Expr::Var(<>),
