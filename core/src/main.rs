@@ -39,5 +39,6 @@ fn main() {
            parser::parse_Expr("forall (a : data) -> \\ (a : data) -> a")
              .unwrap());
   println!("{:?}", parser::parse_Expr("a -> a").unwrap());
+  println!("{:?}", parser::parse_Expr("a -> a -> a").unwrap());
   // println!("{:?}", parser::parse_Expr("forall (a : data) -> a -> a").unwrap());
 }
