@@ -41,16 +41,45 @@ pub mod calc {
 
 use std::fmt::{Debug, Formatter, Error};
 
-pub trait Normalize {
-  fn normalize(&self) -> Self;
-}
-
+////////////////////////////////////////////////////////////////////////////////
+// Definition of core abstract syntax tree for System Zero                    //
+////////////////////////////////////////////////////////////////////////////////
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub enum Const {
   Data,
   Codata,
 }
 
+#[derive(Clone, Eq, PartialEq)]
+pub struct Var {
+  name: String,
+  idx: i32,
+}
+
+#[derive(Clone, Eq, PartialEq)]
+pub enum Expr {
+  // Type system constants
+  Const(Const),
+  // Bound variables
+  Var(Var),
+  // Lambda
+  Lam(Var, Box<Expr>, Box<Expr>),
+  // "forall"
+  Pi(Var, Box<Expr>, Box<Expr>),
+  // Function application
+  App(Box<Expr>, Box<Expr>),
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Traits                                                                     //
+////////////////////////////////////////////////////////////////////////////////
+pub trait Normalize {
+  fn normalize(&self) -> Self;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Traits for Const                                                           //
+////////////////////////////////////////////////////////////////////////////////
 impl Normalize for Const {
   fn normalize(&self) -> Const {
     *self
@@ -67,12 +96,9 @@ impl Debug for Const {
   }
 }
 
-#[derive(Clone, Eq, PartialEq)]
-pub struct Var {
-  name: String,
-  idx: i32,
-}
-
+////////////////////////////////////////////////////////////////////////////////
+// Traits for Var                                                             //
+////////////////////////////////////////////////////////////////////////////////
 impl Var {
   pub fn new(name: &str, idx: i32) -> Var {
     Var {
@@ -100,20 +126,9 @@ impl Debug for Var {
   }
 }
 
-#[derive(Clone, Eq, PartialEq)]
-pub enum Expr {
-  // Type system constants
-  Const(Const),
-  // Bound variables
-  Var(Var),
-  // Lambda
-  Lam(Var, Box<Expr>, Box<Expr>),
-  // "forall"
-  Pi(Var, Box<Expr>, Box<Expr>),
-  // Function application
-  App(Box<Expr>, Box<Expr>),
-}
-
+///////////////////////////////////////////////////////////////////////////////
+// Traits for Expr                                                           //
+///////////////////////////////////////////////////////////////////////////////
 impl Expr {
   pub fn constant(constant: Const) -> Expr {
     Expr::Const(constant)
@@ -318,7 +333,9 @@ impl Debug for Expr {
   }
 }
 
-
+////////////////////////////////////////////////////////////////////////////////
+// Tests for AST                                                              //
+////////////////////////////////////////////////////////////////////////////////
 #[test]
 fn test_to_string() {
   let codata = Const::Codata;
