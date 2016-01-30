@@ -39,11 +39,13 @@ pub mod calc {
   }
 }
 
+use std::fmt::{Debug, Formatter, Error};
+
 pub trait Normalize {
   fn normalize(&self) -> Self;
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Eq, PartialEq)]
 pub enum Const {
   Data,
   Codata,
@@ -55,16 +57,17 @@ impl Normalize for Const {
   }
 }
 
-impl ToString for Const {
-  fn to_string(&self) -> String {
+impl Debug for Const {
+  fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+    use self::Const::*;
     match *self {
-      Const::Data => "data".to_string(),
-      Const::Codata => "codata".to_string(),
+      Data => write!(fmt, "data"),
+      Codata => write!(fmt, "codata"),
     }
   }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq)]
 pub struct Var {
   name: String,
   idx: i32,
@@ -77,13 +80,6 @@ impl Var {
       idx: idx,
     }
   }
-
-  pub fn shift(&self) -> Var {
-    Var {
-      name: self.name.clone(),
-      idx: self.idx + 1,
-    }
-  }
 }
 
 impl Normalize for Var {
@@ -92,19 +88,19 @@ impl Normalize for Var {
   }
 }
 
-impl ToString for Var {
-  fn to_string(&self) -> String {
+impl Debug for Var {
+  fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
     if self.name.len() == 0 {
-      "".to_string()
+      Ok(())
     } else if self.idx == 0 {
-      self.name.clone()
+      write!(fmt, "{}", self.name)
     } else {
-      self.name.clone() + "@" + &self.idx.to_string()
+      write!(fmt, "{}@{}", self.name, self.idx)
     }
   }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq)]
 pub enum Expr {
   // Type system constants
   Const(Const),
@@ -232,17 +228,6 @@ fn replace(val: &Var, with: &Expr, body: &Expr) -> Expr {
   }
 }
 
-// fn find_first_var(body: &Expr) -> Var {
-//   use self::Expr::*;
-//   match *body {
-//     Const(_) => panic!("constant"),
-//     Var(ref var) => var.clone(),
-//     Lam(ref var, _, _) => var.clone(),
-//     Pi(ref var, _, _) => var.clone(),
-//     App(ref f, _) => find_first_var(f),
-//   }
-// }
-
 impl Normalize for Expr {
   fn normalize(&self) -> Expr {
     use self::Expr::*;
@@ -283,49 +268,51 @@ impl Normalize for Expr {
   }
 }
 
-impl ToString for Expr {
-  fn to_string(&self) -> String {
+impl Debug for Expr {
+  fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
     use self::Expr::*;
     match *self {
-      Const(ref constant) => constant.to_string(),
-      Var(ref var) => var.to_string(),
+      Const(ref constant) => write!(fmt, "{:?}", constant),
+      Var(ref var) => write!(fmt, "{:?}", var),
       Lam(ref var, ref ty, ref body) => {
-        let vars = var.to_string();
-        // if vars.len() == 0 {
-        //   "\\".to_string() + &ty.to_string() + " -> " + &body.to_string()
-        // } else {
-        "\\(".to_string() + &var.to_string() + " : " + &ty.to_string() +
-        ") -> " + &body.to_string()
-        // }
+        write!(fmt, "\\({:?} : {:?}) -> {:?}", var, ty, body)
       }
+
       Pi(ref var, ref ty, ref body) => {
-        let vars = var.to_string();
-        if vars.len() == 0 {
-          // "forall (".to_string() +
-          ty.to_string() + " -> " + &body.to_string()
+        if var.name.len() == 0 {
+          write!(fmt, "{:?} -> {:?}", ty, body)
         } else {
-          "forall (".to_string() + &var.to_string() + " : " +
-          &ty.to_string() + ") -> " + &body.to_string()
+          write!(fmt, "forall ({:?} : {:?}) -> {:?}", var, ty, body)
         }
       }
       App(ref f, ref arg) => {
-        let mut s = String::new();
         if f.is_lam() || f.is_pi() {
-          s.push('(');
-          s.push_str(&f.to_string()[..]);
-          s.push(')');
+          try!(write!(fmt, "("))
         } else {
-          s.push_str(&f.to_string()[..]);
+          try!(Ok(()))
         }
-        s.push(' ');
+        try!(write!(fmt, "{:?}", f));
+        if f.is_lam() || f.is_pi() {
+          try!(write!(fmt, ")"))
+        } else {
+          try!(Ok(()))
+        }
+
+        try!(write!(fmt, " "));
+
         if arg.is_lam() || arg.is_pi() || arg.is_app() {
-          s.push('(');
-          s.push_str(&arg.to_string()[..]);
-          s.push(')');
+          try!(write!(fmt, "("));
         } else {
-          s.push_str(&arg.to_string()[..]);
+          try!(Ok(()));
         }
-        s
+        try!(write!(fmt, "{:?}", arg));
+        if arg.is_lam() || arg.is_pi() || arg.is_app() {
+          try!(write!(fmt, ")"))
+        } else {
+          try!(Ok(()))
+        }
+
+        Ok(())
       }
     }
   }
@@ -335,17 +322,17 @@ impl ToString for Expr {
 #[test]
 fn test_to_string() {
   let codata = Const::Codata;
-  assert_eq!("codata", codata.to_string());
+  assert_eq!("codata", format!("{:?}", codata));
   let a = Var::new("a", 0);
   let x = Var::new("x", 0);
   let expra = var(&a);
   let exprx = var(&x);
-  assert_eq!("x", x.to_string());
+  assert_eq!("x", format!("{:?}", x));
   let id = pi(a.clone(), constant(Const::Data), lam(x, expra, exprx));
-  assert_eq!("forall (a : data) -> (x : a) -> x", id.to_string());
+  assert_eq!("forall (a : data) -> \\(x : a) -> x", format!("{:?}", id));
   let apply_id = app(app(id, var(&Var::new("int", 0))), var(&Var::new("1", 0)));
-  assert_eq!("(forall (a : data) -> (x : a) -> x) int 1",
-             apply_id.to_string());
+  assert_eq!("(forall (a : data) -> \\(x : a) -> x) int 1",
+             format!("{:?}", apply_id));
 }
 
 #[test]
@@ -357,11 +344,11 @@ fn test_id_eq_id2() {
   // id's type
   let ty = pi(a.clone(),
               constant(Const::Data),
-              lam(unused, Expr::var(&a), Expr::var(&a)));
+              pi(unused, Expr::var(&a), Expr::var(&a)));
   // id's implementation
-  let id_impl = pi(a.clone(),
-                   constant(Const::Data),
-                   lam(x.clone(), Expr::var(&a), Expr::var(&x)));
+  let id_impl = lam(a.clone(),
+                    constant(Const::Data),
+                    lam(x.clone(), Expr::var(&a), Expr::var(&x)));
   // implementation of id applied to itself applied to id
   let id2app = app(lam(id.clone(),
                        ty.clone(),
