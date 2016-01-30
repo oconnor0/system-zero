@@ -11,9 +11,9 @@ grammar; //["LALR(1)"];
 //   | \(variable : E) -> E
 
 pub Expr: Expr<'input> = {
-  r"\\" "(" <v:Variable> ":" <t:Expr> ")" r"->" <b:Expr> =>
+  r"\\" "(" <v:Variable> ":" <t:Expr> ")" "->" <b:Expr> =>
     Expr::Lam(v, Box::new(t), Box::new(b)),
-  "forall" "(" <v:Variable> ":" <t:Expr> ")" r"->" <b:Expr> =>
+  "forall" "(" <v:Variable> ":" <t:Expr> ")" "->" <b:Expr> =>
     Expr::Pi(v, Box::new(t), Box::new(b)),
   // <t:Variable> "->" <b:Expr> =>
   //   Expr::Pi(Var::new("", 0), Box::new(Expr::Var(t)), Box::new(b)),
