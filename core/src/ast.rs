@@ -41,9 +41,7 @@ pub mod calc {
 
 use std::fmt::{Debug, Formatter, Error};
 
-////////////////////////////////////////////////////////////////////////////////
-// Definition of core abstract syntax tree for System Zero                    //
-////////////////////////////////////////////////////////////////////////////////
+/// Definition of core abstract syntax tree for System Zero
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub enum Const {
   Data,
@@ -51,35 +49,31 @@ pub enum Const {
 }
 
 #[derive(Clone, Eq, PartialEq)]
-pub struct Var {
-  name: String,
+pub struct Var<'input> {
+  name: &'input str,
   idx: i32,
 }
 
 #[derive(Clone, Eq, PartialEq)]
-pub enum Expr {
+pub enum Expr<'input> {
   // Type system constants
   Const(Const),
   // Bound variables
-  Var(Var),
+  Var(Var<'input>),
   // Lambda
-  Lam(Var, Box<Expr>, Box<Expr>),
+  Lam(Var<'input>, Box<Expr<'input>>, Box<Expr<'input>>),
   // "forall"
-  Pi(Var, Box<Expr>, Box<Expr>),
+  Pi(Var<'input>, Box<Expr<'input>>, Box<Expr<'input>>),
   // Function application
-  App(Box<Expr>, Box<Expr>),
+  App(Box<Expr<'input>>, Box<Expr<'input>>),
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// Traits                                                                     //
-////////////////////////////////////////////////////////////////////////////////
+/// Traits
 pub trait Normalize {
   fn normalize(&self) -> Self;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// Traits for Const                                                           //
-////////////////////////////////////////////////////////////////////////////////
+/// Traits for Const
 impl Normalize for Const {
   fn normalize(&self) -> Const {
     *self
@@ -96,25 +90,23 @@ impl Debug for Const {
   }
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// Traits for Var                                                             //
-////////////////////////////////////////////////////////////////////////////////
-impl Var {
-  pub fn new(name: &str, idx: i32) -> Var {
+/// Traits for Var
+impl<'input> Var<'input> {
+  pub fn new(name: &'input str, idx: i32) -> Var {
     Var {
-      name: name.to_string(),
+      name: name,
       idx: idx,
     }
   }
 }
 
-impl Normalize for Var {
-  fn normalize(&self) -> Var {
+impl<'input> Normalize for Var<'input> {
+  fn normalize(&self) -> Var<'input> {
     self.clone()
   }
 }
 
-impl Debug for Var {
+impl<'input> Debug for Var<'input> {
   fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
     if self.name.len() == 0 {
       Ok(())
@@ -126,23 +118,27 @@ impl Debug for Var {
   }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// Traits for Expr                                                           //
-///////////////////////////////////////////////////////////////////////////////
-impl Expr {
-  pub fn constant(constant: Const) -> Expr {
+/// Traits for Expr
+impl<'input> Expr<'input> {
+  pub fn constant(constant: Const) -> Expr<'input> {
     Expr::Const(constant)
   }
-  pub fn var(v: &Var) -> Expr {
+  pub fn var(v: &Var<'input>) -> Expr<'input> {
     Expr::Var(v.clone())
   }
-  pub fn lam(var: Var, ty: Expr, body: Expr) -> Expr {
+  pub fn lam(var: Var<'input>,
+             ty: Expr<'input>,
+             body: Expr<'input>)
+             -> Expr<'input> {
     Expr::Lam(var, Box::new(ty), Box::new(body))
   }
-  pub fn pi(var: Var, ty: Expr, body: Expr) -> Expr {
+  pub fn pi(var: Var<'input>,
+            ty: Expr<'input>,
+            body: Expr<'input>)
+            -> Expr<'input> {
     Expr::Pi(var, Box::new(ty), Box::new(body))
   }
-  pub fn app(f: Expr, arg: Expr) -> Expr {
+  pub fn app(f: Expr<'input>, arg: Expr<'input>) -> Expr<'input> {
     Expr::App(Box::new(f), Box::new(arg))
   }
 
@@ -178,23 +174,32 @@ impl Expr {
   }
 }
 
-pub fn constant(c: Const) -> Expr {
+pub fn constant<'input>(c: Const) -> Expr<'input> {
   Expr::constant(c)
 }
-pub fn var(v: &Var) -> Expr {
+pub fn var<'input>(v: &Var<'input>) -> Expr<'input> {
   Expr::var(v)
 }
-pub fn lam(var: Var, ty: Expr, body: Expr) -> Expr {
+pub fn lam<'input>(var: Var<'input>,
+                   ty: Expr<'input>,
+                   body: Expr<'input>)
+                   -> Expr<'input> {
   Expr::lam(var, ty, body)
 }
-pub fn pi(var: Var, ty: Expr, body: Expr) -> Expr {
+pub fn pi<'input>(var: Var<'input>,
+                  ty: Expr<'input>,
+                  body: Expr<'input>)
+                  -> Expr<'input> {
   Expr::pi(var, ty, body)
 }
-pub fn app(f: Expr, arg: Expr) -> Expr {
+pub fn app<'input>(f: Expr<'input>, arg: Expr<'input>) -> Expr<'input> {
   Expr::app(f, arg)
 }
 
-fn replace(val: &Var, with: &Expr, body: &Expr) -> Expr {
+fn replace<'input>(val: &Var<'input>,
+                   with: &Expr<'input>,
+                   body: &Expr<'input>)
+                   -> Expr<'input> {
   use self::Expr::*;
   // println!("replace {} with {} in {}",
   //          val.to_string(),
@@ -243,8 +248,8 @@ fn replace(val: &Var, with: &Expr, body: &Expr) -> Expr {
   }
 }
 
-impl Normalize for Expr {
-  fn normalize(&self) -> Expr {
+impl<'input> Normalize for Expr<'input> {
+  fn normalize(&self) -> Expr<'input> {
     use self::Expr::*;
     // println!("normalize {}", self.to_string());
     match *self {
@@ -283,7 +288,7 @@ impl Normalize for Expr {
   }
 }
 
-impl Debug for Expr {
+impl<'input> Debug for Expr<'input> {
   fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
     use self::Expr::*;
     match *self {
@@ -333,9 +338,7 @@ impl Debug for Expr {
   }
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// Tests for AST                                                              //
-////////////////////////////////////////////////////////////////////////////////
+/// Tests for AST
 #[test]
 fn test_to_string() {
   let codata = Const::Codata;
