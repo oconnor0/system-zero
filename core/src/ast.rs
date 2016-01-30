@@ -1,3 +1,44 @@
+pub mod calc {
+  use std::fmt::{Debug, Formatter, Error};
+
+  pub enum Expr<'input> {
+    Number(i32),
+    Name(&'input str),
+    Op(Box<Expr<'input>>, Opcode, Box<Expr<'input>>),
+  }
+
+  #[derive(Copy, Clone)]
+  pub enum Opcode {
+    Mul,
+    Div,
+    Add,
+    Sub,
+  }
+
+  impl<'input> Debug for Expr<'input> {
+    fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+      use self::Expr::*;
+      match *self {
+        Number(n) => write!(fmt, "{:?}", n),
+        Name(n) => write!(fmt, "{}", n),
+        Op(ref l, op, ref r) => write!(fmt, "({:?} {:?} {:?})", l, op, r),
+      }
+    }
+  }
+
+  impl Debug for Opcode {
+    fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+      use self::Opcode::*;
+      match *self {
+        Mul => write!(fmt, "*"),
+        Div => write!(fmt, "/"),
+        Add => write!(fmt, "+"),
+        Sub => write!(fmt, "-"),
+      }
+    }
+  }
+}
+
 pub trait Normalize {
   fn normalize(&self) -> Self;
 }
@@ -253,8 +294,8 @@ impl ToString for Expr {
         // if vars.len() == 0 {
         //   "\\".to_string() + &ty.to_string() + " -> " + &body.to_string()
         // } else {
-          "\\(".to_string() + &var.to_string() + " : " + &ty.to_string() +
-          ") -> " + &body.to_string()
+        "\\(".to_string() + &var.to_string() + " : " + &ty.to_string() +
+        ") -> " + &body.to_string()
         // }
       }
       Pi(ref var, ref ty, ref body) => {

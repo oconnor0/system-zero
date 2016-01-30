@@ -29,6 +29,8 @@ xor x y = if x bool (not y) y.
 ((1 : int) -> 1)
 1
 
+-- try again
+
 -- the below types may be useful
 forall a. a -> a.
 exists b. b -> b.

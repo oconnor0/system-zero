@@ -2,6 +2,13 @@
 name = "core"
 version = "0.0.1"
 authors = ["Matthew O'Connor <thegreendragon@gmail.com>"]
+build = "build.rs"
 
 [dependencies]
 itertools = "0.4.7"
+lalrpop-util = { path = "../../lalrpop/lalrpop-util" }
+# lalrpop-util = "0.9.0"
+
+[build-dependencies]
+lalrpop = { path = "../../lalrpop/lalrpop" }
+# lalrpop = "0.9.0"

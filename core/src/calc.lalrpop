@@ -1,0 +1,40 @@
+use std::str::FromStr;
+use ast::calc::{Expr, Opcode};
+
+grammar;
+
+pub Expr: Box<Expr<'input>> = { // (1)
+  Expr ExprOp Factor => Box::new(Expr::Op(<>)), // (2)
+  Factor,
+};
+
+ExprOp: Opcode = { // (3)
+  "-" => Opcode::Sub,
+  "+" => Opcode::Add,
+};
+
+Factor: Box<Expr<'input>> = {
+  Factor FactorOp Term => Box::new(Expr::Op(<>)),
+  Term,
+};
+
+FactorOp: Opcode = {
+  "/" => Opcode::Div,
+  "*" => Opcode::Mul,
+};
+
+Term: Box<Expr<'input>> = {
+  Num => Box::new(Expr::Number(<>)),
+  Name => Box::new(Expr::Name(<>)),
+  "(" <Expr> ")"
+};
+
+Num: i32 = {
+  r"[0-9]+" => i32::from_str(<>).unwrap()
+};
+
+Name: &'input str = {
+  r"[a-zA-Z_]+"
+};
+
+// => i32::from_str(<>).unwrap()
