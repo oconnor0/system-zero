@@ -55,6 +55,7 @@ pub struct Var<'input> {
 }
 
 #[derive(Clone, Eq, PartialEq)]
+// #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Expr<'input> {
   // Type system constants
   Const(Const),
