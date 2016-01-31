@@ -15,13 +15,13 @@ pub Expr: Expr<'input> = {
     Expr::Lam(v, Box::new(t), Box::new(b)),
   "forall" "(" <v:Variable> ":" <t:Expr> ")" "->" <b:Expr> =>
     Expr::Pi(v, Box::new(t), Box::new(b)),
-  <t:Term> "->" <b:Expr> =>
+  <t:Apply> "->" <b:Expr> =>
     Expr::Pi(Var::new("", 0), Box::new(t), Box::new(b)),
 
-  // This works out backwards.
-  <t:Term> <b:Expr> => Expr::App(Box::new(t), Box::new(b)),
+  // This works out backwards. Introduce new left-hand side.
+  // <t:Apply> <b:Expr> => Expr::App(Box::new(t), Box::new(b)),
 
-  Term => <>,
+  Apply => <>,
   // <e0:Expr> <e1:Variable> => Expr::App(Box::new(e0), Box::new(Expr::Var(e1))),
   // <Variable> => Expr::Var(<>),
   // <Constant> => Expr::Const(<>),
@@ -29,16 +29,10 @@ pub Expr: Expr<'input> = {
   // <e0:Expr> <e1:Application> => Expr::App(Box::new(e0), Box::new(e1)),
 };
 
-// E = E E
-//
-// a b c
-// a (b c)
-// (a b) c
-
-// App: Expr<'input> = {
-//   <Variable> => Expr::Var(<>),
-//   "(" <Expr> ")" => <>,
-// };
+Apply: Expr<'input> = {
+  <f:Apply> <p:Term> => Expr::App(Box::new(f), Box::new(p)),
+  Term => <>,
+};
 
 Term: Expr<'input> = {
   "(" <Expr> ")" => <>,
