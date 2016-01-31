@@ -40,10 +40,9 @@ fn main() {
   println!("{:?}", parser::parse_Expr("(a -> b) c (d e)").unwrap());
   println!("{:?}", parser::parse_Expr("(a -> b) c (d e)").unwrap());
   match parser::parse_Expr("1") {
-    Ok(_) => (), //Ok(e),
+    Ok(_) => (),
     Err(e) => {
       println!("{:?}", e);
-      // try!(Err(e));
       ()
     }
   }

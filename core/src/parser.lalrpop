@@ -24,16 +24,7 @@ pub Expr: Expr<'input> = {
     Expr::Pi(v, Box::new(t), Box::new(b)),
   <t:Apply> "->" <b:Expr> =>
     Expr::Pi(Var::new("", 0), Box::new(t), Box::new(b)),
-
-  // This works out backwards. Introduce new left-hand side.
-  // <t:Apply> <b:Expr> => Expr::App(Box::new(t), Box::new(b)),
-
   Apply => <>,
-  // <e0:Expr> <e1:Variable> => Expr::App(Box::new(e0), Box::new(Expr::Var(e1))),
-  // <Variable> => Expr::Var(<>),
-  // <Constant> => Expr::Const(<>),
-  // <e0:Application> <e1:Expr> => Expr::App(Box::new(e0), Box::new(e1)),
-  // <e0:Expr> <e1:Application> => Expr::App(Box::new(e0), Box::new(e1)),
 };
 
 Apply: Expr<'input> = {
