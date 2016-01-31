@@ -1,12 +1,5 @@
-pub mod calc;
-pub mod ast; //::calc;
+pub mod ast;
 mod parser;
-
-#[test]
-fn calculator4() {
-  assert_eq!(&format!("{:?}", calc::parse_Expr("a - 22 * 44 + 66").unwrap()),
-             "((a - (22 * 44)) + 66)");
-}
 
 #[cfg(not(test))]
 fn main() {
@@ -42,16 +35,20 @@ fn main() {
   println!("{:?}", parser::parse_Expr("a -> a -> a").unwrap());
   println!("{:?}", parser::parse_Expr("a -> a -> a -> a").unwrap());
   println!("{:?}", parser::parse_Expr("a b (c -> d)").unwrap());
-  println!("{:?}", parser::parse_Expr("forall (a : data) -> a -> a").unwrap());
+  println!("{:?}",
+           parser::parse_Expr("forall (a : data) -> a -> a").unwrap());
   println!("{:?}", parser::parse_Expr("(a -> b) c (d e)").unwrap());
   println!("{:?}", parser::parse_Expr("(a -> b) c (d e)").unwrap());
   match parser::parse_Expr("1") {
-    Ok(e) => (), //Ok(e),
-    Err(e) =>  {
+    Ok(_) => (), //Ok(e),
+    Err(e) => {
       println!("{:?}", e);
       // try!(Err(e));
       ()
     }
   }
-  // println!("{:?}", parser::parse_Expr("1").unwrap());
+  println!("{:?}",
+           parser::parse_Def("id : forall (a : data) -> a -> a.").unwrap());
+  println!("{:?}",
+           parser::parse_Def("id = \\(a : data) -> \\(x : a) -> x.").unwrap());
 }

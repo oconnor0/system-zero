@@ -5,7 +5,6 @@ authors = ["Matthew O'Connor <thegreendragon@gmail.com>"]
 build = "build.rs"
 
 [dependencies]
-itertools = "0.4.7"
 lalrpop-util = { path = "../../lalrpop/lalrpop-util" }
 # lalrpop-util = "0.9.0"
 

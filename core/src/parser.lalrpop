@@ -1,7 +1,14 @@
-use std::str::FromStr;
-use ast::{Const, Expr, Var};
+use ast::{Const, Def, Expr, Var};
 
-grammar; //["LALR(1)"];
+grammar;
+
+// D = variable = E .
+// T = variable : E .
+
+pub Def: Def<'input> = {
+  <v:Variable> "=" <e:Expr> "." => Def::Val(v, Box::new(e)),
+  <v:Variable> ":" <t:Expr> "." => Def::Ty(v, Box::new(t)),
+};
 
 // E = constant
 //   | variable

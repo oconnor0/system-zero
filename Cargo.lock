@@ -26,7 +26,6 @@ dependencies = [
 name = "core"
 version = "0.0.1"
 dependencies = [
- "itertools 0.4.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "lalrpop 0.10.0",
  "lalrpop-util 0.10.0",
 ]
@@ -44,11 +43,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "itertools"
 version = "0.3.25"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-
-[[package]]
-name = "itertools"
-version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]

@@ -1,44 +1,3 @@
-pub mod calc {
-  use std::fmt::{Debug, Formatter, Error};
-
-  pub enum Expr<'input> {
-    Number(i32),
-    Name(&'input str),
-    Op(Box<Expr<'input>>, Opcode, Box<Expr<'input>>),
-  }
-
-  #[derive(Copy, Clone)]
-  pub enum Opcode {
-    Mul,
-    Div,
-    Add,
-    Sub,
-  }
-
-  impl<'input> Debug for Expr<'input> {
-    fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
-      use self::Expr::*;
-      match *self {
-        Number(n) => write!(fmt, "{:?}", n),
-        Name(n) => write!(fmt, "{}", n),
-        Op(ref l, op, ref r) => write!(fmt, "({:?} {:?} {:?})", l, op, r),
-      }
-    }
-  }
-
-  impl Debug for Opcode {
-    fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
-      use self::Opcode::*;
-      match *self {
-        Mul => write!(fmt, "*"),
-        Div => write!(fmt, "/"),
-        Add => write!(fmt, "+"),
-        Sub => write!(fmt, "-"),
-      }
-    }
-  }
-}
-
 use std::fmt::{Debug, Formatter, Error};
 
 /// Definition of core abstract syntax tree for System Zero
@@ -69,18 +28,18 @@ pub enum Expr<'input> {
   App(Box<Expr<'input>>, Box<Expr<'input>>),
 }
 
+#[derive(Clone, Eq, PartialEq)]
+pub enum Def<'input> {
+  Val(Var<'input>, Box<Expr<'input>>),
+  Ty(Var<'input>, Box<Expr<'input>>),
+}
+
 /// Traits
 pub trait Normalize {
   fn normalize(&self) -> Self;
 }
 
 /// Traits for Const
-impl Normalize for Const {
-  fn normalize(&self) -> Const {
-    *self
-  }
-}
-
 impl Debug for Const {
   fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
     use self::Const::*;
@@ -98,12 +57,6 @@ impl<'input> Var<'input> {
       name: name,
       idx: idx,
     }
-  }
-}
-
-impl<'input> Normalize for Var<'input> {
-  fn normalize(&self) -> Var<'input> {
-    self.clone()
   }
 }
 
@@ -254,16 +207,16 @@ impl<'input> Normalize for Expr<'input> {
     use self::Expr::*;
     // println!("normalize {}", self.to_string());
     match *self {
-      Const(ref constant) => Const(constant.normalize()),
-      Var(ref var) => Var(var.normalize()),
+      Const(ref constant) => Const(constant.clone()),
+      Var(ref var) => Var(var.clone()),
       Lam(ref var, ref ty, ref body) => {
-        let l = &Lam(var.normalize(),
+        let l = &Lam(var.clone(),
                      Box::new(ty.normalize()),
                      Box::new(body.normalize()));
         l.clone()
       }
       Pi(ref var, ref ty, ref body) => {
-        let p = &Pi(var.normalize(),
+        let p = &Pi(var.clone(),
                     Box::new(ty.normalize()),
                     Box::new(body.normalize()));
         p.clone()
@@ -335,6 +288,27 @@ impl<'input> Debug for Expr<'input> {
 
         Ok(())
       }
+    }
+  }
+}
+
+/// Traits for Def
+impl<'input> Normalize for Def<'input> {
+  fn normalize(&self) -> Def<'input> {
+    use self::Def::*;
+    match *self {
+      Val(ref n, ref e) => Def::Val(n.clone(), Box::new(e.normalize())),
+      Ty(ref n, ref t) => Def::Val(n.clone(), Box::new(t.normalize())),
+    }
+  }
+}
+
+impl<'input> Debug for Def<'input> {
+  fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+    use self::Def::*;
+    match *self {
+      Val(ref n, ref e) => write!(fmt, "{:?} = {:?}.", n, e),
+      Ty(ref n, ref t) => write!(fmt, "{:?} : {:?}.", n, t),
     }
   }
 }
