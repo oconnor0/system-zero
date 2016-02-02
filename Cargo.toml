@@ -4,4 +4,4 @@ version = "0.0.1"
 authors = ["Matthew O'Connor <thegreendragon@gmail.com>"]
 
 [dependencies]
-core = { path = "core" }
+system-zero-core = { path = "core" }

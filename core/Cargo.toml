@@ -1,5 +1,5 @@
 [package]
-name = "core"
+name = "system-zero-core"
 version = "0.0.1"
 authors = ["Matthew O'Connor <thegreendragon@gmail.com>"]
 build = "build.rs"

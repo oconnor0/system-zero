@@ -1,5 +1,5 @@
-extern crate core;
-use core::ast::*;
+extern crate system_zero_core;
+use system_zero_core::ast::*;
 
 fn main() {
   let v_bool = Var::new("bool", 0);
