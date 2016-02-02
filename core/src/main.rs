@@ -1,5 +1,8 @@
-pub mod ast;
-mod parser;
+extern crate system_zero_core;
+
+use system_zero_core::*;
+use system_zero_core::ast::Normalize;
+
 
 #[cfg(not(test))]
 fn main() {
@@ -17,29 +20,29 @@ fn main() {
   // let apply_id = app(app(id, var(&Var::new("int", 0))), var(&Var::new("1", 0)));
   // println!("{:?}", apply_id);
 
-  println!("{:?}", parser::parse_Expr("a").unwrap());
-  println!("{:?}", parser::parse_Expr("data").unwrap());
-  println!("{:?}", parser::parse_Expr("codata").unwrap());
-  println!("{:?}", parser::parse_Expr("\\ (a : data) -> a").unwrap());
+  println!("{:?}", parse_expr("a").unwrap());
+  println!("{:?}", parse_expr("data").unwrap());
+  println!("{:?}", parse_expr("codata").unwrap());
+  println!("{:?}", parse_expr("\\ (a : data) -> a").unwrap());
   println!("{:?}",
-           parser::parse_Expr("\\ (a : data) -> \\ (a : data) -> a").unwrap());
+           parse_expr("\\ (a : data) -> \\ (a : data) -> a").unwrap());
   println!("{:?}",
-           parser::parse_Expr("forall (a : data) -> a").unwrap());
+           parse_expr("forall (a : data) -> a").unwrap());
   println!("{:?}",
-           parser::parse_Expr("forall (a : data) -> forall (b : data) -> a")
+           parse_expr("forall (a : data) -> forall (b : data) -> a")
              .unwrap());
   println!("{:?}",
-           parser::parse_Expr("forall (a : data) -> \\ (a : data) -> a")
+           parse_expr("forall (a : data) -> \\ (a : data) -> a")
              .unwrap());
-  println!("{:?}", parser::parse_Expr("a -> a").unwrap());
-  println!("{:?}", parser::parse_Expr("a -> a -> a").unwrap());
-  println!("{:?}", parser::parse_Expr("a -> a -> a -> a").unwrap());
-  println!("{:?}", parser::parse_Expr("a b (c -> d)").unwrap());
+  println!("{:?}", parse_expr("a -> a").unwrap());
+  println!("{:?}", parse_expr("a -> a -> a").unwrap());
+  println!("{:?}", parse_expr("a -> a -> a -> a").unwrap());
+  println!("{:?}", parse_expr("a b (c -> d)").unwrap());
   println!("{:?}",
-           parser::parse_Expr("forall (a : data) -> a -> a").unwrap());
-  println!("{:?}", parser::parse_Expr("(a -> b) c (d e)").unwrap());
-  println!("{:?}", parser::parse_Expr("(a -> b) c (d e)").unwrap());
-  match parser::parse_Expr("1") {
+           parse_expr("forall (a : data) -> a -> a").unwrap());
+  println!("{:?}", parse_expr("(a -> b) c (d e)").unwrap());
+  println!("{:?}", parse_expr("(a -> b) c (d e)").unwrap());
+  match parse_expr("1") {
     Ok(_) => (),
     Err(e) => {
       println!("{:?}", e);
@@ -47,9 +50,19 @@ fn main() {
     }
   }
   println!("{:?}",
-           parser::parse_Def("id : forall (a : data) -> a -> a.").unwrap());
+           parse_def("id : forall (a : data) -> a -> a.").unwrap());
   println!("{:?}",
-           parser::parse_Def("id = \\(a : data) -> \\(x : a) -> x.").unwrap());
+           parse_def("id = \\(a : data) -> \\(x : a) -> x.").unwrap());
   println!("{:?}",
-           parser::parse_Expr("forall (a : data -> data) -> a").unwrap());
+           parse_expr("forall (a : data -> data) -> a").unwrap());
+
+  let m = r#"id : forall (a : data) -> a -> a.
+id = \(a : data) -> \(x : a) -> x.
+(\(id_b : forall (b : data) -> b -> b)
+   -> id_b (forall (b : data) -> b -> b) id_b
+) id."#;
+  println!("-- module id");
+  println!("{:?}", parse_mod(m).unwrap());
+  println!("-- normalized module id");
+  println!("{:?}", parse_mod(m).unwrap().normalize());
 }

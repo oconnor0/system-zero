@@ -313,7 +313,7 @@ impl<'input> Normalize for Def<'input> {
     use self::Def::*;
     match *self {
       Val(ref n, ref e) => Def::Val(n.clone(), Box::new(e.normalize())),
-      Ty(ref n, ref t) => Def::Val(n.clone(), Box::new(t.normalize())),
+      Ty(ref n, ref t) => Def::Ty(n.clone(), Box::new(t.normalize())),
     }
   }
 }
@@ -343,8 +343,8 @@ impl<'input> Debug for One<'input> {
   fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
     use self::One::*;
     match *self {
-      Def(ref d) => write!(fmt, "{:?}", d),
-      Expr(ref e) => write!(fmt, "{:?}", e),
+      Def(ref d) => write!(fmt, "{:?}\n", d),
+      Expr(ref e) => write!(fmt, "{:?}.\n", e),
     }
   }
 }
