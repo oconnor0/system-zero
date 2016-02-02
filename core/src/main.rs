@@ -50,4 +50,6 @@ fn main() {
            parser::parse_Def("id : forall (a : data) -> a -> a.").unwrap());
   println!("{:?}",
            parser::parse_Def("id = \\(a : data) -> \\(x : a) -> x.").unwrap());
+  println!("{:?}",
+           parser::parse_Expr("forall (a : data -> data) -> a").unwrap());
 }

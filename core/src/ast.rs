@@ -13,6 +13,7 @@ pub struct Var<'input> {
   idx: i32,
 }
 
+// "Everything" is an expression in System Zero.
 #[derive(Clone, Eq, PartialEq)]
 // #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Expr<'input> {
@@ -28,10 +29,24 @@ pub enum Expr<'input> {
   App(Box<Expr<'input>>, Box<Expr<'input>>),
 }
 
+// Definitions of values and types.
 #[derive(Clone, Eq, PartialEq)]
 pub enum Def<'input> {
   Val(Var<'input>, Box<Expr<'input>>),
   Ty(Var<'input>, Box<Expr<'input>>),
+}
+
+// Represents one top-level element.
+#[derive(Clone, Eq, PartialEq)]
+pub enum One<'input> {
+  Def(Box<Def<'input>>),
+  Expr(Box<Expr<'input>>),
+}
+
+// All of the code for a given module.
+#[derive(Clone, Eq, PartialEq)]
+pub struct Mod<'input> {
+  listing: Vec<Box<One<'input>>>,
 }
 
 /// Traits
@@ -310,6 +325,55 @@ impl<'input> Debug for Def<'input> {
       Val(ref n, ref e) => write!(fmt, "{:?} = {:?}.", n, e),
       Ty(ref n, ref t) => write!(fmt, "{:?} : {:?}.", n, t),
     }
+  }
+}
+
+/// Traits for a single one.
+impl<'input> Normalize for One<'input> {
+  fn normalize(&self) -> One<'input> {
+    use self::One::*;
+    match *self {
+      Def(ref d) => One::Def(Box::new(d.normalize())),
+      Expr(ref e) => One::Expr(Box::new(e.normalize())),
+    }
+  }
+}
+
+impl<'input> Debug for One<'input> {
+  fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+    use self::One::*;
+    match *self {
+      Def(ref d) => write!(fmt, "{:?}", d),
+      Expr(ref e) => write!(fmt, "{:?}", e),
+    }
+  }
+}
+
+/// Traits for an entire module.
+impl<'input> Mod<'input> {
+  pub fn new(listing: Vec<Box<One<'input>>>) -> Mod {
+    Mod {
+      listing: listing,
+    }
+  }
+}
+
+impl<'input> Normalize for Mod<'input> {
+  fn normalize(&self) -> Mod<'input> {
+    let mut listing = Vec::new();
+    for ref o in self.listing.iter() {
+      listing.push(Box::new(o.normalize()));
+    }
+    Mod::new(listing)
+  }
+}
+
+impl<'input> Debug for Mod<'input> {
+  fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+    for ref o in self.listing.iter() {
+      try!(write!(fmt, "{:?}", o));
+    }
+    Ok(())
   }
 }
 
