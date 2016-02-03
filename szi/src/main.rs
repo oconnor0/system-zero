@@ -15,10 +15,9 @@ fn repl() -> io::Result<()> {
     match io::stdin().read_line(&mut input) {
       Ok(_) => {
         let line: &str = &input[..];
-        if let Ok(one) = parse_one(line) {
-          print!("{:?}", one.normalize());
-        } else {
-          println!("Couldn't parse.");
+        match parse_one(line) {
+          Ok(one) => print!("{:?}", one.normalize()),
+          Err(error) => println!("Couldn't parse: {:?}", error),
         }
       }
       Err(error) => println!("Couldn't read: {}", error),
