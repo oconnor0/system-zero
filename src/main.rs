@@ -2,6 +2,32 @@
 extern crate system_zero_core;
 use system_zero_core::ast::*;
 
+fn constant<'input>(c: Const) -> Expr<'input> {
+  Expr::constant(c)
+}
+
+fn var<'input>(v: &Var<'input>) -> Expr<'input> {
+  Expr::var(v)
+}
+
+fn lam<'input>(var: Var<'input>,
+               ty: Expr<'input>,
+               body: Expr<'input>)
+               -> Expr<'input> {
+  Expr::lam(var, ty, body)
+}
+
+fn pi<'input>(var: Var<'input>,
+              ty: Expr<'input>,
+              body: Expr<'input>)
+              -> Expr<'input> {
+  Expr::pi(var, ty, body)
+}
+
+fn app<'input>(f: Expr<'input>, arg: Expr<'input>) -> Expr<'input> {
+  Expr::app(f, arg)
+}
+
 fn main() {
   let v_bool = Var::new("bool", 0);
   let v_true = Var::new("true", 0);
