@@ -27,20 +27,16 @@ fn main() {
   println!("{:?}", parse_expr("\\ (a : data) -> a").unwrap());
   println!("{:?}",
            parse_expr("\\ (a : data) -> \\ (a : data) -> a").unwrap());
+  println!("{:?}", parse_expr("forall (a : data) -> a").unwrap());
   println!("{:?}",
-           parse_expr("forall (a : data) -> a").unwrap());
+           parse_expr("forall (a : data) -> forall (b : data) -> a").unwrap());
   println!("{:?}",
-           parse_expr("forall (a : data) -> forall (b : data) -> a")
-             .unwrap());
-  println!("{:?}",
-           parse_expr("forall (a : data) -> \\ (a : data) -> a")
-             .unwrap());
+           parse_expr("forall (a : data) -> \\ (a : data) -> a").unwrap());
   println!("{:?}", parse_expr("a -> a").unwrap());
   println!("{:?}", parse_expr("a -> a -> a").unwrap());
   println!("{:?}", parse_expr("a -> a -> a -> a").unwrap());
   println!("{:?}", parse_expr("a b (c -> d)").unwrap());
-  println!("{:?}",
-           parse_expr("forall (a : data) -> a -> a").unwrap());
+  println!("{:?}", parse_expr("forall (a : data) -> a -> a").unwrap());
   println!("{:?}", parse_expr("(a -> b) c (d e)").unwrap());
   println!("{:?}", parse_expr("(a -> b) c (d e)").unwrap());
   match parse_expr("1") {

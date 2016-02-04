@@ -144,28 +144,6 @@ impl<'input> Expr<'input> {
   }
 }
 
-pub fn constant<'input>(c: Const) -> Expr<'input> {
-  Expr::constant(c)
-}
-pub fn var<'input>(v: &Var<'input>) -> Expr<'input> {
-  Expr::var(v)
-}
-pub fn lam<'input>(var: Var<'input>,
-                   ty: Expr<'input>,
-                   body: Expr<'input>)
-                   -> Expr<'input> {
-  Expr::lam(var, ty, body)
-}
-pub fn pi<'input>(var: Var<'input>,
-                  ty: Expr<'input>,
-                  body: Expr<'input>)
-                  -> Expr<'input> {
-  Expr::pi(var, ty, body)
-}
-pub fn app<'input>(f: Expr<'input>, arg: Expr<'input>) -> Expr<'input> {
-  Expr::app(f, arg)
-}
-
 fn replace<'input>(val: &Var<'input>,
                    with: &Expr<'input>,
                    body: &Expr<'input>)
@@ -353,9 +331,7 @@ impl<'input> Debug for One<'input> {
 /// Traits for an entire module.
 impl<'input> Mod<'input> {
   pub fn new(listing: Vec<Box<One<'input>>>) -> Mod {
-    Mod {
-      listing: listing,
-    }
+    Mod { listing: listing }
   }
 }
 
@@ -379,6 +355,37 @@ impl<'input> Debug for Mod<'input> {
 }
 
 /// Tests for AST
+#[cfg(test)]
+fn constant<'input>(c: Const) -> Expr<'input> {
+  Expr::constant(c)
+}
+
+#[cfg(test)]
+fn var<'input>(v: &Var<'input>) -> Expr<'input> {
+  Expr::var(v)
+}
+
+#[cfg(test)]
+fn lam<'input>(var: Var<'input>,
+               ty: Expr<'input>,
+               body: Expr<'input>)
+               -> Expr<'input> {
+  Expr::lam(var, ty, body)
+}
+
+#[cfg(test)]
+fn pi<'input>(var: Var<'input>,
+              ty: Expr<'input>,
+              body: Expr<'input>)
+              -> Expr<'input> {
+  Expr::pi(var, ty, body)
+}
+
+#[cfg(test)]
+fn app<'input>(f: Expr<'input>, arg: Expr<'input>) -> Expr<'input> {
+  Expr::app(f, arg)
+}
+
 #[test]
 fn test_to_string() {
   let codata = Const::Codata;
