@@ -29,7 +29,40 @@ xor x y = if x bool (not y) y.
 ((1 : int) -> 1)
 1
 
--- try again
+-- try again?
+
+-- helpful things?
+id : forall (a : data) -> a -> a.
+id = \(a : data) -> \(va : a) -> va.
+id (a : data) (va : a) = va.
+id (a : data) (va : a) : a = va.
+id (a : data) (va : a) -> a = va.
+id a va = va.
+
+bool : data.
+nat : data.
+list a : data -> data.
+stream a : data -> codata.
+tuple n : nat -> data.
+vec n a : nat -> data -> data.
+
+algebra?
+f-algebra
+f-coalgebra
+
+how to convert algebraic data types into f-algebra and f-coalgebra?
+
+strictly positive
+
+recursion
+corecursion
+structure of codata (http://www.tac-tics.net/blog/data-vs-codata)
+
+http://lambda-the-ultimate.org/node/4373
+http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.46.5169&rep=rep1&type=pdf
+http://www.cs.nott.ac.uk/~psztxa/talks/types04.pdf
+https://brianmckenna.org/blog/evenodd_agda_idris_haskell_scala
+http://blog.sigfpe.com/2007/07/data-and-codata.html
 
 -- the below types may be useful
 forall a. a -> a.
