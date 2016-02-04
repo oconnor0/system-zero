@@ -1,0 +1,28 @@
+bool : data.
+true : bool.
+false : bool.
+if : bool -> forall (r : data) -> r -> r -> r.
+
+bool = forall (r : data) -> r -> r -> r.
+true = \(r : data) -> \(t : r) -> \(f : r) -> t.
+false = \(r : data) -> \(t : r) -> \(f : r) -> f.
+if = \(b : bool) -> b.
+
+(   \(bool : data)
+->  \(true : bool)
+->  \(false : bool)
+->  \(if : bool -> forall (r : data) -> r -> r -> r)
+->  if true bool false true
+)
+
+(forall (r : data) -> r -> r -> r)
+
+(\(r : data) -> \(t : r) -> \(f : r) -> t)
+(\(r : data) -> \(t : r) -> \(f : r) -> f)
+(\(b : bool) -> b)
+
+(\(bool : data) -> \(true : bool) -> \(false : bool) -> \(if : bool -> forall (r : data) -> r -> r -> r) -> if true bool false true) (forall (r : data) -> r -> r -> r) (\(r : data) -> \(t : r) -> \(f : r) -> t) (\(r : data) -> \(t : r) -> \(f : r) -> f) (\(b : bool) -> b).
+
+(\(bool : data) -> \(true : bool) -> \(false : bool) -> \(if : bool -> forall (r : data) -> r -> r -> r) -> \(flag : bool) -> if flag bool true false) (forall (r : data) -> r -> r -> r) (\(r : data) -> \(t : r) -> \(f : r) -> t) (\(r : data) -> \(t : r) -> \(f : r) -> f) (\(b : bool) -> b).
+
+(\(bool : data) -> \(true : bool) -> \(false : bool) -> \(if : bool -> forall (r : data) -> r -> r -> r) -> \(flag : bool) -> if flag int one zero) (forall (r : data) -> r -> r -> r) (\(r : data) -> \(t : r) -> \(f : r) -> t) (\(r : data) -> \(t : r) -> \(f : r) -> f) (\(b : bool) -> b).
