@@ -1,3 +1,4 @@
+// Copyright (c) 2016, Matthew O'Connor
 extern crate lalrpop_util;
 
 pub mod ast;
@@ -27,6 +28,3 @@ pub fn parse_expr<'input>(input: &'input str)
                           -> Result<'input, Box<ast::Expr<'input>>> {
   parser::parse_Expr(input)
 }
-
-// #[test]
-// fn test_p

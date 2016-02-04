@@ -31,6 +31,8 @@ xor x y = if x bool (not y) y.
 
 -- try again?
 
+what is the type of data? of codata? if they are different types?
+
 -- helpful things?
 id : forall (a : data) -> a -> a.
 id = \(a : data) -> \(va : a) -> va.

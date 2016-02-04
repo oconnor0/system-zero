@@ -1,3 +1,4 @@
+// Copyright (c) 2016, Matthew O'Connor
 use std::fmt::{Debug, Formatter, Error};
 
 /// Definition of core abstract syntax tree for System Zero
