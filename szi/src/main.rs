@@ -28,6 +28,6 @@ fn repl() -> io::Result<()> {
 
 fn main() {
   println!("szi - system zero interpreter");
-  println!("Copyright (C) 2016 Matthew O'Connor <thegreendragon@gmail.com>");
+  println!("Copyright (c) 2016, Matthew O'Connor <thegreendragon@gmail.com>");
   std::process::exit(repl().is_ok() as i32)
 }
