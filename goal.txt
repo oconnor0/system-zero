@@ -39,6 +39,7 @@ id (a : data) (va : a) : a = va.
 id (a : data) (va : a) -> a = va.
 id a va = va.
 
+-- types to implement, in rough order of priority?
 bool : data.
 nat : data.
 list a : data -> data.
