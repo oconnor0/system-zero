@@ -19,7 +19,7 @@ if = \(b : bool) -> b.
 
 (\(r : data) -> \(t : r) -> \(f : r) -> t)
 (\(r : data) -> \(t : r) -> \(f : r) -> f)
-(\(b : bool) -> b)
+(\(b : bool) -> b).
 
 (\(bool : data) -> \(true : bool) -> \(false : bool) -> \(if : bool -> forall (r : data) -> r -> r -> r) -> if true bool false true) (forall (r : data) -> r -> r -> r) (\(r : data) -> \(t : r) -> \(f : r) -> t) (\(r : data) -> \(t : r) -> \(f : r) -> f) (\(b : bool) -> b).
 
