@@ -9,22 +9,18 @@ use self::lalrpop_util::ParseError;
 pub type Result<'input, T> =
   std::result::Result<T, ParseError<usize, (usize, &'input str), ()>>;
 
-pub fn parse_mod<'input>(input: &'input str)
-                         -> Result<'input, ast::Mod<'input>> {
+pub fn parse_mod<'input>(input: &'input str) -> Result<'input, ast::Mod> {
   parser::parse_Mod(input)
 }
 
-pub fn parse_one<'input>(input: &'input str)
-                         -> Result<'input, ast::One<'input>> {
+pub fn parse_one<'input>(input: &'input str) -> Result<'input, ast::One> {
   parser::parse_One(input)
 }
 
-pub fn parse_def<'input>(input: &'input str)
-                         -> Result<'input, ast::Def<'input>> {
+pub fn parse_def<'input>(input: &'input str) -> Result<'input, ast::Def> {
   parser::parse_Def(input)
 }
 
-pub fn parse_expr<'input>(input: &'input str)
-                          -> Result<'input, ast::Expr<'input>> {
+pub fn parse_expr<'input>(input: &'input str) -> Result<'input, ast::Expr> {
   parser::parse_Expr(input)
 }

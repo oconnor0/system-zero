@@ -9,45 +9,45 @@ pub enum Const {
 }
 
 #[derive(Clone, Eq, PartialEq)]
-pub struct Var<'input> {
-  name: &'input str,
+pub struct Var {
+  name: String,
   idx: i32,
 }
 
 // "Everything" is an expression in System Zero.
 #[derive(Clone, Eq, PartialEq)]
 // #[derive(Debug, Clone, Eq, PartialEq)]
-pub enum Expr<'input> {
+pub enum Expr {
   // Type system constants
   Const(Const),
   // Bound variables
-  Var(Var<'input>),
+  Var(Var),
   // Lambda
-  Lam(Var<'input>, Box<Expr<'input>>, Box<Expr<'input>>),
+  Lam(Var, Box<Expr>, Box<Expr>),
   // "forall"
-  Pi(Var<'input>, Box<Expr<'input>>, Box<Expr<'input>>),
+  Pi(Var, Box<Expr>, Box<Expr>),
   // Function application
-  App(Box<Expr<'input>>, Box<Expr<'input>>),
+  App(Box<Expr>, Box<Expr>),
 }
 
 // Definitions of values and types.
 #[derive(Clone, Eq, PartialEq)]
-pub enum Def<'input> {
-  Val(Var<'input>, Expr<'input>),
-  Ty(Var<'input>, Expr<'input>),
+pub enum Def {
+  Val(Var, Expr),
+  Ty(Var, Expr),
 }
 
 // Represents one top-level element.
 #[derive(Clone, Eq, PartialEq)]
-pub enum One<'input> {
-  Def(Def<'input>),
-  Expr(Expr<'input>),
+pub enum One {
+  Def(Def),
+  Expr(Expr),
 }
 
 // All of the code for a given module.
 #[derive(Clone, Eq, PartialEq)]
-pub struct Mod<'input> {
-  listing: Vec<One<'input>>,
+pub struct Mod {
+  listing: Vec<One>,
 }
 
 /// Traits
@@ -67,16 +67,16 @@ impl Debug for Const {
 }
 
 /// Traits for Var
-impl<'input> Var<'input> {
-  pub fn new(name: &'input str, idx: i32) -> Var {
+impl Var {
+  pub fn new<'input>(name: &'input str, idx: i32) -> Var {
     Var {
-      name: name,
+      name: name.to_string(),
       idx: idx,
     }
   }
 }
 
-impl<'input> Debug for Var<'input> {
+impl Debug for Var {
   fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
     if self.name.len() == 0 {
       Ok(())
@@ -89,26 +89,20 @@ impl<'input> Debug for Var<'input> {
 }
 
 /// Traits for Expr
-impl<'input> Expr<'input> {
-  pub fn constant(constant: Const) -> Expr<'input> {
+impl Expr {
+  pub fn constant(constant: Const) -> Expr {
     Expr::Const(constant)
   }
-  pub fn var(v: &Var<'input>) -> Expr<'input> {
+  pub fn var(v: &Var) -> Expr {
     Expr::Var(v.clone())
   }
-  pub fn lam(var: Var<'input>,
-             ty: Expr<'input>,
-             body: Expr<'input>)
-             -> Expr<'input> {
+  pub fn lam(var: Var, ty: Expr, body: Expr) -> Expr {
     Expr::Lam(var, Box::new(ty), Box::new(body))
   }
-  pub fn pi(var: Var<'input>,
-            ty: Expr<'input>,
-            body: Expr<'input>)
-            -> Expr<'input> {
+  pub fn pi(var: Var, ty: Expr, body: Expr) -> Expr {
     Expr::Pi(var, Box::new(ty), Box::new(body))
   }
-  pub fn app(f: Expr<'input>, arg: Expr<'input>) -> Expr<'input> {
+  pub fn app(f: Expr, arg: Expr) -> Expr {
     Expr::App(Box::new(f), Box::new(arg))
   }
 
@@ -144,10 +138,7 @@ impl<'input> Expr<'input> {
   }
 }
 
-fn replace<'input>(val: &Var<'input>,
-                   with: &Expr<'input>,
-                   body: &Expr<'input>)
-                   -> Expr<'input> {
+fn replace(val: &Var, with: &Expr, body: &Expr) -> Expr {
   use self::Expr::*;
   // println!("replace {} with {} in {}",
   //          val.to_string(),
@@ -196,8 +187,8 @@ fn replace<'input>(val: &Var<'input>,
   }
 }
 
-impl<'input> Normalize for Expr<'input> {
-  fn normalize(&self) -> Expr<'input> {
+impl Normalize for Expr {
+  fn normalize(&self) -> Expr {
     use self::Expr::*;
     // println!("normalize {}", self.to_string());
     match *self {
@@ -236,7 +227,7 @@ impl<'input> Normalize for Expr<'input> {
   }
 }
 
-impl<'input> Debug for Expr<'input> {
+impl Debug for Expr {
   fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
     use self::Expr::*;
     match *self {
@@ -287,8 +278,8 @@ impl<'input> Debug for Expr<'input> {
 }
 
 /// Traits for Def
-impl<'input> Normalize for Def<'input> {
-  fn normalize(&self) -> Def<'input> {
+impl Normalize for Def {
+  fn normalize(&self) -> Def {
     use self::Def::*;
     match *self {
       Val(ref n, ref e) => Def::Val(n.clone(), e.normalize()),
@@ -297,7 +288,7 @@ impl<'input> Normalize for Def<'input> {
   }
 }
 
-impl<'input> Debug for Def<'input> {
+impl Debug for Def {
   fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
     use self::Def::*;
     match *self {
@@ -308,8 +299,8 @@ impl<'input> Debug for Def<'input> {
 }
 
 /// Traits for a single one.
-impl<'input> Normalize for One<'input> {
-  fn normalize(&self) -> One<'input> {
+impl Normalize for One {
+  fn normalize(&self) -> One {
     use self::One::*;
     match *self {
       Def(ref d) => One::Def(d.normalize()),
@@ -318,7 +309,7 @@ impl<'input> Normalize for One<'input> {
   }
 }
 
-impl<'input> Debug for One<'input> {
+impl Debug for One {
   fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
     use self::One::*;
     match *self {
@@ -329,14 +320,14 @@ impl<'input> Debug for One<'input> {
 }
 
 /// Traits for an entire module.
-impl<'input> Mod<'input> {
-  pub fn new(listing: Vec<One<'input>>) -> Mod {
+impl Mod {
+  pub fn new(listing: Vec<One>) -> Mod {
     Mod { listing: listing }
   }
 }
 
-impl<'input> Normalize for Mod<'input> {
-  fn normalize(&self) -> Mod<'input> {
+impl Normalize for Mod {
+  fn normalize(&self) -> Mod {
     let mut listing = Vec::new();
     for ref o in self.listing.iter() {
       listing.push(o.normalize());
@@ -345,7 +336,7 @@ impl<'input> Normalize for Mod<'input> {
   }
 }
 
-impl<'input> Debug for Mod<'input> {
+impl Debug for Mod {
   fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
     for ref o in self.listing.iter() {
       try!(write!(fmt, "{:?}", o));
@@ -356,33 +347,27 @@ impl<'input> Debug for Mod<'input> {
 
 /// Tests for AST
 #[cfg(test)]
-fn constant<'input>(c: Const) -> Expr<'input> {
+fn constant(c: Const) -> Expr {
   Expr::constant(c)
 }
 
 #[cfg(test)]
-fn var<'input>(v: &Var<'input>) -> Expr<'input> {
+fn var(v: &Var) -> Expr {
   Expr::var(v)
 }
 
 #[cfg(test)]
-fn lam<'input>(var: Var<'input>,
-               ty: Expr<'input>,
-               body: Expr<'input>)
-               -> Expr<'input> {
+fn lam(var: Var, ty: Expr, body: Expr) -> Expr {
   Expr::lam(var, ty, body)
 }
 
 #[cfg(test)]
-fn pi<'input>(var: Var<'input>,
-              ty: Expr<'input>,
-              body: Expr<'input>)
-              -> Expr<'input> {
+fn pi(var: Var, ty: Expr, body: Expr) -> Expr {
   Expr::pi(var, ty, body)
 }
 
 #[cfg(test)]
-fn app<'input>(f: Expr<'input>, arg: Expr<'input>) -> Expr<'input> {
+fn app(f: Expr, arg: Expr) -> Expr {
   Expr::app(f, arg)
 }
 

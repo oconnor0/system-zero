@@ -5,7 +5,7 @@ grammar;
 
 // M = One+
 
-pub Mod: Mod<'input> = {
+pub Mod: Mod = {
   (<One>)+ => Mod::new(<>)
 };
 
@@ -13,7 +13,7 @@ pub Mod: Mod<'input> = {
 // O = Def
 //   | Expr
 
-pub One: One<'input> = {
+pub One: One = {
   <Def> => One::Def(<>),
   <Expr> "." => One::Expr(<>),
 };
@@ -21,7 +21,7 @@ pub One: One<'input> = {
 // D = variable = E .
 // T = variable : E .
 
-pub Def: Def<'input> = {
+pub Def: Def = {
   <v:Variable> "=" <e:Expr> "." => Def::Val(v, e),
   <v:Variable> ":" <t:Expr> "." => Def::Ty(v, t),
 };
@@ -33,7 +33,7 @@ pub Def: Def<'input> = {
 //   | E -> E
 //   | \(variable : E) -> E
 
-pub Expr: Expr<'input> = {
+pub Expr: Expr = {
   r"\\" "(" <v:Variable> ":" <t:Expr> ")" "->" <b:Expr> =>
     Expr::Lam(v, Box::new(t), Box::new(b)),
   "forall" "(" <v:Variable> ":" <t:Expr> ")" "->" <b:Expr> =>
@@ -43,18 +43,18 @@ pub Expr: Expr<'input> = {
   Apply => <>,
 };
 
-Apply: Expr<'input> = {
+Apply: Expr = {
   <f:Apply> <p:Term> => Expr::App(Box::new(f), Box::new(p)),
   Term => <>,
 };
 
-Term: Expr<'input> = {
+Term: Expr = {
   "(" <Expr> ")" => <>,
   <Variable> => Expr::Var(<>),
   <Constant> => Expr::Const(<>),
 };
 
-Variable: Var<'input> = {
+Variable: Var = {
   <r"[a-zA-Z_]+[a-zA-Z_0-9]*"> => Var::new(<>, 0)
 };
 
