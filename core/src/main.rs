@@ -4,7 +4,6 @@ extern crate system_zero_core;
 use system_zero_core::*;
 use system_zero_core::ast::Normalize;
 
-
 #[cfg(not(test))]
 fn main() {
   // use ast::*;

@@ -33,21 +33,21 @@ pub enum Expr<'input> {
 // Definitions of values and types.
 #[derive(Clone, Eq, PartialEq)]
 pub enum Def<'input> {
-  Val(Var<'input>, Box<Expr<'input>>),
-  Ty(Var<'input>, Box<Expr<'input>>),
+  Val(Var<'input>, Expr<'input>),
+  Ty(Var<'input>, Expr<'input>),
 }
 
 // Represents one top-level element.
 #[derive(Clone, Eq, PartialEq)]
 pub enum One<'input> {
-  Def(Box<Def<'input>>),
-  Expr(Box<Expr<'input>>),
+  Def(Def<'input>),
+  Expr(Expr<'input>),
 }
 
 // All of the code for a given module.
 #[derive(Clone, Eq, PartialEq)]
 pub struct Mod<'input> {
-  listing: Vec<Box<One<'input>>>,
+  listing: Vec<One<'input>>,
 }
 
 /// Traits
@@ -291,8 +291,8 @@ impl<'input> Normalize for Def<'input> {
   fn normalize(&self) -> Def<'input> {
     use self::Def::*;
     match *self {
-      Val(ref n, ref e) => Def::Val(n.clone(), Box::new(e.normalize())),
-      Ty(ref n, ref t) => Def::Ty(n.clone(), Box::new(t.normalize())),
+      Val(ref n, ref e) => Def::Val(n.clone(), e.normalize()),
+      Ty(ref n, ref t) => Def::Ty(n.clone(), t.normalize()),
     }
   }
 }
@@ -312,8 +312,8 @@ impl<'input> Normalize for One<'input> {
   fn normalize(&self) -> One<'input> {
     use self::One::*;
     match *self {
-      Def(ref d) => One::Def(Box::new(d.normalize())),
-      Expr(ref e) => One::Expr(Box::new(e.normalize())),
+      Def(ref d) => One::Def(d.normalize()),
+      Expr(ref e) => One::Expr(e.normalize()),
     }
   }
 }
@@ -330,7 +330,7 @@ impl<'input> Debug for One<'input> {
 
 /// Traits for an entire module.
 impl<'input> Mod<'input> {
-  pub fn new(listing: Vec<Box<One<'input>>>) -> Mod {
+  pub fn new(listing: Vec<One<'input>>) -> Mod {
     Mod { listing: listing }
   }
 }
@@ -339,7 +339,7 @@ impl<'input> Normalize for Mod<'input> {
   fn normalize(&self) -> Mod<'input> {
     let mut listing = Vec::new();
     for ref o in self.listing.iter() {
-      listing.push(Box::new(o.normalize()));
+      listing.push(o.normalize());
     }
     Mod::new(listing)
   }

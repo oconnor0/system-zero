@@ -10,21 +10,21 @@ pub type Result<'input, T> =
   std::result::Result<T, ParseError<usize, (usize, &'input str), ()>>;
 
 pub fn parse_mod<'input>(input: &'input str)
-                         -> Result<'input, Box<ast::Mod<'input>>> {
+                         -> Result<'input, ast::Mod<'input>> {
   parser::parse_Mod(input)
 }
 
 pub fn parse_one<'input>(input: &'input str)
-                         -> Result<'input, Box<ast::One<'input>>> {
+                         -> Result<'input, ast::One<'input>> {
   parser::parse_One(input)
 }
 
 pub fn parse_def<'input>(input: &'input str)
-                         -> Result<'input, Box<ast::Def<'input>>> {
+                         -> Result<'input, ast::Def<'input>> {
   parser::parse_Def(input)
 }
 
 pub fn parse_expr<'input>(input: &'input str)
-                          -> Result<'input, Box<ast::Expr<'input>>> {
+                          -> Result<'input, ast::Expr<'input>> {
   parser::parse_Expr(input)
 }

@@ -5,25 +5,25 @@ grammar;
 
 // M = One+
 
-pub Mod: Box<Mod<'input>> = {
-  (<One>)+ => Box::new(Mod::new(<>))
+pub Mod: Mod<'input> = {
+  (<One>)+ => Mod::new(<>)
 };
 
 // One is a single "line"/entry.
 // O = Def
 //   | Expr
 
-pub One: Box<One<'input>> = {
-  <Def> => Box::new(One::Def(<>)),
-  <Expr> "." => Box::new(One::Expr(<>)),
+pub One: One<'input> = {
+  <Def> => One::Def(<>),
+  <Expr> "." => One::Expr(<>),
 };
 
 // D = variable = E .
 // T = variable : E .
 
-pub Def: Box<Def<'input>> = {
-  <v:Variable> "=" <e:Expr> "." => Box::new(Def::Val(v, e)),
-  <v:Variable> ":" <t:Expr> "." => Box::new(Def::Ty(v, t)),
+pub Def: Def<'input> = {
+  <v:Variable> "=" <e:Expr> "." => Def::Val(v, e),
+  <v:Variable> ":" <t:Expr> "." => Def::Ty(v, t),
 };
 
 // E = constant
@@ -33,25 +33,25 @@ pub Def: Box<Def<'input>> = {
 //   | E -> E
 //   | \(variable : E) -> E
 
-pub Expr: Box<Expr<'input>> = {
+pub Expr: Expr<'input> = {
   r"\\" "(" <v:Variable> ":" <t:Expr> ")" "->" <b:Expr> =>
-    Box::new(Expr::Lam(v, t, b)),
+    Expr::Lam(v, Box::new(t), Box::new(b)),
   "forall" "(" <v:Variable> ":" <t:Expr> ")" "->" <b:Expr> =>
-    Box::new(Expr::Pi(v, t, b)),
+    Expr::Pi(v, Box::new(t), Box::new(b)),
   <t:Apply> "->" <b:Expr> =>
-    Box::new(Expr::Pi(Var::new("", 0), t, b)),
+    Expr::Pi(Var::new("", 0), Box::new(t), Box::new(b)),
   Apply => <>,
 };
 
-Apply: Box<Expr<'input>> = {
-  <f:Apply> <p:Term> => Box::new(Expr::App(f, p)),
+Apply: Expr<'input> = {
+  <f:Apply> <p:Term> => Expr::App(Box::new(f), Box::new(p)),
   Term => <>,
 };
 
-Term: Box<Expr<'input>> = {
+Term: Expr<'input> = {
   "(" <Expr> ")" => <>,
-  <Variable> => Box::new(Expr::Var(<>)),
-  <Constant> => Box::new(Expr::Const(<>)),
+  <Variable> => Expr::Var(<>),
+  <Constant> => Expr::Const(<>),
 };
 
 Variable: Var<'input> = {
