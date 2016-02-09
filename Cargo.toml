@@ -5,3 +5,4 @@ authors = ["Matthew O'Connor <thegreendragon@gmail.com>"]
 
 [dependencies]
 system-zero-core = { path = "core" }
+szi = { path = "szi" }
