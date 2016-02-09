@@ -22,7 +22,13 @@ fn repl() -> io::Result<()> {
   let stdin = io::stdin();
   for line in stdin.lock().lines() {
     let line = line.unwrap();
-    if line.len() > 0 {
+    if line == ":env" {
+      println!("{:?}", env);
+    } else if line == ":history" {
+      println!("{:?}", history);
+    } else if line == ":quit" {
+      break
+    } else if line.len() > 0 {
       history.push(line.clone());
       match parse_one(&line[..]) {
         Ok(one) => {
@@ -45,5 +51,6 @@ fn repl() -> io::Result<()> {
 fn main() {
   println!("szi - system zero interpreter");
   println!("Copyright (c) 2016, Matthew O'Connor <thegreendragon@gmail.com>");
-  std::process::exit(repl().is_ok() as i32)
+  // Return 0 if repl returned Ok.
+  std::process::exit(!repl().is_ok() as i32)
 }
