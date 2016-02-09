@@ -13,14 +13,27 @@ fn prompt() -> () {
   io::stdout().flush().unwrap()
 }
 
+type Env = Vec<Def>;
+
 fn repl() -> io::Result<()> {
+  let mut history: Vec<String> = vec![];
+  let mut env = Env::new();
   prompt();
   let stdin = io::stdin();
   for line in stdin.lock().lines() {
     let line = line.unwrap();
     if line.len() > 0 {
+      history.push(line.clone());
       match parse_one(&line[..]) {
-        Ok(one) => print!("{:?}", one.normalize()),
+        Ok(one) => {
+          match one {
+            One::Def(ref def) => {
+              print!("{:?}", one);
+              env.push(def.clone());
+            }
+            One::Expr(_) => print!("{:?}", one.normalize()),
+          }
+        }
         Err(error) => println!("Couldn't parse: {:?}", error),
       }
     }
