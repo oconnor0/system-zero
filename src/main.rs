@@ -2,29 +2,23 @@
 extern crate system_zero_core;
 use system_zero_core::ast::*;
 
-fn constant<'input>(c: Const) -> Expr<'input> {
+fn constant(c: Const) -> Expr {
   Expr::constant(c)
 }
 
-fn var<'input>(v: &Var<'input>) -> Expr<'input> {
+fn var(v: &Var) -> Expr {
   Expr::var(v)
 }
 
-fn lam<'input>(var: Var<'input>,
-               ty: Expr<'input>,
-               body: Expr<'input>)
-               -> Expr<'input> {
+fn lam(var: Var, ty: Expr, body: Expr) -> Expr {
   Expr::lam(var, ty, body)
 }
 
-fn pi<'input>(var: Var<'input>,
-              ty: Expr<'input>,
-              body: Expr<'input>)
-              -> Expr<'input> {
+fn pi(var: Var, ty: Expr, body: Expr) -> Expr {
   Expr::pi(var, ty, body)
 }
 
-fn app<'input>(f: Expr<'input>, arg: Expr<'input>) -> Expr<'input> {
+fn app(f: Expr, arg: Expr) -> Expr {
   Expr::app(f, arg)
 }
 
