@@ -11,3 +11,8 @@ lalrpop-util = { path = "../../lalrpop/lalrpop-util" }
 [build-dependencies]
 lalrpop = { path = "../../lalrpop/lalrpop" }
 # lalrpop = "0.9.0"
+
+[[bin]]
+doc = false
+name = "main"
+path = "src/main.rs"

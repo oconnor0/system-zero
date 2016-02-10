@@ -1,22 +1,31 @@
 // Copyright (c) 2016, Matthew O'Connor
+
+//! Abstract syntax tree for System Zero Core
+//!
+//! Defines AST and traits for debugging and normalizing expressions.
+
 use std::fmt::{Debug, Formatter, Error};
 
-/// Definition of core abstract syntax tree for System Zero
+/// `Const` defines the builtin types of types.
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub enum Const {
+  /// `Data` is finite and all functions on it must be total.
   Data,
+  /// `Codata` is potentially infinite and corecursion must be productive.
   Codata,
 }
 
+/// `Var` is the label for a bound variable.
 #[derive(Clone, Eq, PartialEq)]
 pub struct Var {
+  /// `name` is the label.
   name: String,
+  /// `idx` is the De Bruijn index, in theory.
   idx: i32,
 }
 
-// "Everything" is an expression in System Zero.
+/// `Expr` represents all computations in System Zero Core.
 #[derive(Clone, Eq, PartialEq)]
-// #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Expr {
   // Type system constants
   Const(Const),
@@ -30,32 +39,36 @@ pub enum Expr {
   App(Box<Expr>, Box<Expr>),
 }
 
-// Definitions of values and types.
+/// `Def`s are bindings between `Var` and values or types.
 #[derive(Clone, Eq, PartialEq)]
 pub enum Def {
   Val(Var, Expr),
   Ty(Var, Expr),
 }
 
-// Represents one top-level element.
+/// `One` represents one top-level element. It needs a better name.
 #[derive(Clone, Eq, PartialEq)]
 pub enum One {
   Def(Def),
   Expr(Expr),
 }
 
-// All of the code for a given module.
+/// `Mod` is all of the code for a given module.
 #[derive(Clone, Eq, PartialEq)]
 pub struct Mod {
   listing: Vec<One>,
 }
 
-/// Traits
+// # Traits
+
+/// `Normalize` converts the value to a strongly normalized version.
+/// Normalization in a total typed lambda calculus is essentially inlining
+/// until nothing else can be.
 pub trait Normalize {
   fn normalize(&self) -> Self;
 }
 
-/// Traits for Const
+/// Implementations of traits for `Const`
 impl Debug for Const {
   fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
     use self::Const::*;
@@ -66,7 +79,7 @@ impl Debug for Const {
   }
 }
 
-/// Traits for Var
+/// Implementations of traits for `Var`
 impl Var {
   pub fn new<'input>(name: &'input str, idx: i32) -> Var {
     Var {
@@ -88,7 +101,7 @@ impl Debug for Var {
   }
 }
 
-/// Traits for Expr
+/// Implementations of traits for `Expr`
 impl Expr {
   pub fn constant(constant: Const) -> Expr {
     Expr::Const(constant)
@@ -277,7 +290,7 @@ impl Debug for Expr {
   }
 }
 
-/// Traits for Def
+/// Implementations of traits for `Def`
 impl Normalize for Def {
   fn normalize(&self) -> Def {
     use self::Def::*;
@@ -298,7 +311,7 @@ impl Debug for Def {
   }
 }
 
-/// Traits for a single one.
+/// Implementations of traits for `One`
 impl Normalize for One {
   fn normalize(&self) -> One {
     use self::One::*;
@@ -319,7 +332,7 @@ impl Debug for One {
   }
 }
 
-/// Traits for an entire module.
+/// Implementations of traits for an entire `Mod`
 impl Mod {
   pub fn new(listing: Vec<One>) -> Mod {
     Mod { listing: listing }
