@@ -13,7 +13,36 @@ fn prompt() -> () {
   io::stdout().flush().unwrap()
 }
 
-type Env = Vec<Def>;
+#[derive(Debug, Eq, PartialEq)]
+struct Env(Vec<Def>);
+
+impl IntoIterator for Env {
+    type Item = Def;
+    type IntoIter = ::std::vec::IntoIter<Def>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
+impl Env {
+  fn new() -> Env {
+    Env(Vec::new())
+  }
+
+  fn get_val(self, var: &Var) -> Option<Def> {
+    self.into_iter().rev().find(|&ref def| {
+      match *def {
+        Def::Val(ref v, _) => *v == *var,
+        Def::Ty(_, _) => false,
+      }
+    })
+  }
+
+  fn push(&mut self, def: Def) {
+    self.0.push(def)
+  }
+}
 
 fn repl() -> io::Result<()> {
   let mut history: Vec<String> = vec![];
@@ -27,7 +56,7 @@ fn repl() -> io::Result<()> {
     } else if line == ":history" {
       println!("{:?}", history);
     } else if line == ":quit" {
-      break
+      break;
     } else if line.len() > 0 {
       history.push(line.clone());
       match parse_one(&line[..]) {
