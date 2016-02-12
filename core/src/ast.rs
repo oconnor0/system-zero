@@ -291,6 +291,16 @@ impl Debug for Expr {
 }
 
 /// Implementations of traits for `Def`
+impl Def {
+  pub fn expr(&self) -> &Expr {
+    use self::Def::*;
+    match *self {
+      Val(_, ref e) => e,
+      Ty(_, ref e) => e,
+    }
+  }
+}
+
 impl Normalize for Def {
   fn normalize(&self) -> Def {
     use self::Def::*;
