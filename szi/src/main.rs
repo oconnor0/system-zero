@@ -104,6 +104,13 @@ fn normalize_in(e: &Expr, env: &mut Env) -> Expr {
   }
 }
 
+fn normalize_def_in(def: &Def, env: &mut Env) -> Def {
+  match *def {
+    Def::Val(ref var, ref e) => Def::Val(var.clone(), normalize_in(e, env)),
+    Def::Ty(ref var, ref e) => Def::Ty(var.clone(), normalize_in(e, env)),
+  }
+}
+
 fn repl() -> io::Result<()> {
   let mut history: Vec<String> = vec![];
   let mut env = Env::new();
@@ -123,8 +130,10 @@ fn repl() -> io::Result<()> {
         Ok(one) => {
           match one {
             One::Def(ref def) => {
+              let def = normalize_def_in(def, &mut env);
+              let one = One::Def(def.clone());
               print!("{:?}", one);
-              env.push(def.clone());
+              env.push(def);
             }
             One::Expr(ref e) => {
               print!("{:?}", One::Expr(normalize_in(e, &mut env)))
