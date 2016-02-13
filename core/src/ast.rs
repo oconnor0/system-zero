@@ -222,10 +222,13 @@ impl Debug for Expr {
       Lam(ref var, ref ty, ref body) => {
         write!(fmt, "\\({:?} : {:?}) -> {:?}", var, ty, body)
       }
-
       Pi(ref var, ref ty, ref body) => {
         if var.name.len() == 0 {
-          write!(fmt, "{:?} -> {:?}", ty, body)
+          if ty.is_lam() || ty.is_pi() || ty.is_app() {
+            write!(fmt, "({:?}) -> {:?}", ty, body)
+          } else {
+            write!(fmt, "{:?} -> {:?}", ty, body)
+          }
         } else {
           write!(fmt, "forall ({:?} : {:?}) -> {:?}", var, ty, body)
         }
