@@ -26,3 +26,18 @@ if = \(b : bool) -> b.
 (\(bool : data) -> \(true : bool) -> \(false : bool) -> \(if : bool -> forall (r : data) -> r -> r -> r) -> \(flag : bool) -> if flag bool true false) (forall (r : data) -> r -> r -> r) (\(r : data) -> \(t : r) -> \(f : r) -> t) (\(r : data) -> \(t : r) -> \(f : r) -> f) (\(b : bool) -> b).
 
 (\(bool : data) -> \(true : bool) -> \(false : bool) -> \(if : bool -> forall (r : data) -> r -> r -> r) -> \(flag : bool) -> if flag int one zero) (forall (r : data) -> r -> r -> r) (\(r : data) -> \(t : r) -> \(f : r) -> t) (\(r : data) -> \(t : r) -> \(f : r) -> f) (\(b : bool) -> b).
+
+-- and x y = if x bool y false.
+and = \(x : bool) -> \(y : bool) -> if x bool y false.
+
+and : bool -> bool -> bool.
+and = \(x : bool) -> \(y : bool) -> if x bool y false.
+
+or : bool -> bool -> bool.
+or = \(x : bool) -> \(y : bool) -> if x bool true y.
+
+not : bool -> bool.
+not = \(x : bool) -> if x bool false true.
+
+xor : bool -> bool -> bool.
+xor = \(x : bool) -> \(y : bool) -> if x bool (not y) y.
