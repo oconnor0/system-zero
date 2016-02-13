@@ -7,6 +7,8 @@ use std::io::{BufRead, Write};
 use system_zero_core::*;
 use system_zero_core::ast::*;
 
+const BOOL: &'static str = include_str!("bool.sz");
+
 const PROMPT: &'static str = "> ";
 
 fn prompt() -> () {
@@ -25,15 +27,6 @@ impl Debug for Env {
     Ok(())
   }
 }
-
-// impl IntoIterator for Env {
-//     type Item = Def;
-//     type IntoIter = ::std::vec::IntoIter<Def>;
-
-//     fn into_iter(self) -> Self::IntoIter {
-//         self.0.into_iter()
-//     }
-// }
 
 impl Env {
   fn new() -> Env {
@@ -55,6 +48,27 @@ impl Env {
 
   fn pop(&mut self) {
     self.0.pop();
+  }
+
+  fn load(&mut self, file: &'static str) {
+    for line in file.lines() {
+      if line.is_empty() || line.starts_with("--") {
+        ()
+      } else if line.len() > 0 {
+        match parse_one(&line[..]) {
+          Ok(one) => {
+            match one {
+              One::Def(ref def) => {
+                let def = normalize_def_in(def, self);
+                self.push(def);
+              }
+              One::Expr(_) => (),
+            }
+          }
+          Err(error) => println!("Couldn't parse: {:?}", error),
+        }
+      }
+    }
   }
 }
 
@@ -84,22 +98,21 @@ fn normalize_in(e: &Expr, env: &mut Env) -> Expr {
       pi
     }
     Expr::App(ref f, ref arg) => {
-      let f = f.normalize();
-      // let f = *f.clone();
-      let arg = arg.normalize();
-      Expr::App(Box::new(f), Box::new(arg))
-      // if let Expr::Lam(var, _, body) = f {
-      // let lam = replace(&var, &arg, &body).normalize();
-      // println!("normalized = {}", lam.to_string());
-      // lam
-      // } else if let Expr::Pi(var, _, body) = f {
-      // let pi = replace(&var, &arg, &body).normalize();
-      // println!("normalized = {}", pi.to_string());
-      // pi
-      // } else {
-      // panic!("f isn't a function {}", f.to_string())
-      // Expr::App(Box::new(f), Box::new(arg))
-      // }
+      let f = normalize_in(f, env);
+      let arg = normalize_in(arg, env);
+      if let Expr::Lam(var, _, body) = f {
+        env.push(Def::Val(var.clone(), arg));
+        let lam = normalize_in(&*body, env);
+        env.pop();
+        lam
+      } else if let Expr::Pi(var, _, body) = f {
+        env.push(Def::Ty(var.clone(), arg));
+        let pi = normalize_in(&*body, env);
+        env.pop();
+        pi
+      } else {
+        Expr::App(Box::new(f), Box::new(arg))
+      }
     }
   }
 }
@@ -114,6 +127,7 @@ fn normalize_def_in(def: &Def, env: &mut Env) -> Def {
 fn repl() -> io::Result<()> {
   let mut history: Vec<String> = vec![];
   let mut env = Env::new();
+  env.load(BOOL);
   prompt();
   let stdin = io::stdin();
   for line in stdin.lock().lines() {
@@ -124,6 +138,8 @@ fn repl() -> io::Result<()> {
       println!("{:?}", history);
     } else if line == ":quit" {
       break;
+    } else if line.starts_with("--") {
+      ()
     } else if line.len() > 0 {
       history.push(line.clone());
       match parse_one(&line[..]) {

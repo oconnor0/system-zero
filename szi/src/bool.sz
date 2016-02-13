@@ -1,0 +1,26 @@
+bool : data.
+true : bool.
+false : bool.
+if : bool -> forall (r : data) -> r -> r -> r.
+
+bool = forall (r : data) -> r -> r -> r.
+-- true r t f = t.
+true = \(r : data) -> \(t : r) -> \(f : r) -> t.
+-- true r t f = f.
+false = \(r : data) -> \(t : r) -> \(f : r) -> f.
+-- if b = b.
+if = \(b : bool) -> b.
+
+and : bool -> bool -> bool.
+or : bool -> bool -> bool.
+not : bool -> bool.
+xor : bool -> bool -> bool.
+
+-- and x y = if x bool y false.
+and = \(x : bool) -> \(y : bool) -> if x bool y false.
+-- or x y = if x bool true y.
+or = \(x : bool) -> \(y : bool) -> if x bool true y.
+-- not x = if x bool false true.
+not = \(x : bool) -> if x bool false true.
+-- xor x y = if x bool (not y) y.
+xor = \(x : bool) -> \(y : bool) -> if x bool (not y) y.
