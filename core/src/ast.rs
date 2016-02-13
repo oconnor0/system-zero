@@ -5,6 +5,7 @@
 //! Defines AST and traits for debugging and normalizing expressions.
 
 use std::fmt::{Debug, Formatter, Error};
+use parser::parse_One;
 
 /// `Const` defines the builtin types of types.
 #[derive(Clone, Copy, Eq, PartialEq)]
@@ -59,6 +60,10 @@ pub struct Mod {
   listing: Vec<One>,
 }
 
+/// `Env` defines an environment expressions are normalized in.
+#[derive(Eq, PartialEq)]
+pub struct Env(Vec<Def>);
+
 // # Traits
 
 /// `Normalize` converts the value to a strongly normalized version.
@@ -66,6 +71,14 @@ pub struct Mod {
 /// until nothing else can be.
 pub trait Normalize {
   fn normalize(&self) -> Self;
+}
+
+/// `NormalizeIn` converts the value to a strongly normalized version by
+/// replacing free variables with defined variables in the `Env`.
+/// Normalization in a total typed lambda calculus is essentially inlining
+/// until nothing else can be.
+pub trait NormalizeIn {
+  fn normalize_in(&self, &mut Env) -> Self;
 }
 
 /// Implementations of traits for `Const`
@@ -200,46 +213,6 @@ fn replace(val: &Var, with: &Expr, body: &Expr) -> Expr {
   }
 }
 
-impl Normalize for Expr {
-  fn normalize(&self) -> Expr {
-    use self::Expr::*;
-    // println!("normalize {}", self.to_string());
-    match *self {
-      Const(ref constant) => Const(constant.clone()),
-      Var(ref var) => Var(var.clone()),
-      Lam(ref var, ref ty, ref body) => {
-        let l = &Lam(var.clone(),
-                     Box::new(ty.normalize()),
-                     Box::new(body.normalize()));
-        l.clone()
-      }
-      Pi(ref var, ref ty, ref body) => {
-        let p = &Pi(var.clone(),
-                    Box::new(ty.normalize()),
-                    Box::new(body.normalize()));
-        p.clone()
-      }
-      App(ref f, ref arg) => {
-        let f = f.normalize();
-        // let f = *f.clone();
-        let arg = arg.normalize();
-        if let Lam(var, _, body) = f {
-          let lam = replace(&var, &arg, &body).normalize();
-          // println!("normalized = {}", lam.to_string());
-          lam
-        } else if let Pi(var, _, body) = f {
-          let pi = replace(&var, &arg, &body).normalize();
-          // println!("normalized = {}", pi.to_string());
-          pi
-        } else {
-          // panic!("f isn't a function {}", f.to_string())
-          App(Box::new(f), Box::new(arg))
-        }
-      }
-    }
-  }
-}
-
 impl Debug for Expr {
   fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
     use self::Expr::*;
@@ -290,6 +263,93 @@ impl Debug for Expr {
   }
 }
 
+impl Normalize for Expr {
+  fn normalize(&self) -> Expr {
+    use self::Expr::*;
+    // println!("normalize {}", self.to_string());
+    match *self {
+      Const(ref constant) => Const(constant.clone()),
+      Var(ref var) => Var(var.clone()),
+      Lam(ref var, ref ty, ref body) => {
+        let l = &Lam(var.clone(),
+                     Box::new(ty.normalize()),
+                     Box::new(body.normalize()));
+        l.clone()
+      }
+      Pi(ref var, ref ty, ref body) => {
+        let p = &Pi(var.clone(),
+                    Box::new(ty.normalize()),
+                    Box::new(body.normalize()));
+        p.clone()
+      }
+      App(ref f, ref arg) => {
+        let f = f.normalize();
+        // let f = *f.clone();
+        let arg = arg.normalize();
+        if let Lam(var, _, body) = f {
+          let lam = replace(&var, &arg, &body).normalize();
+          // println!("normalized = {}", lam.to_string());
+          lam
+        } else if let Pi(var, _, body) = f {
+          let pi = replace(&var, &arg, &body).normalize();
+          // println!("normalized = {}", pi.to_string());
+          pi
+        } else {
+          // panic!("f isn't a function {}", f.to_string())
+          App(Box::new(f), Box::new(arg))
+        }
+      }
+    }
+  }
+}
+
+impl NormalizeIn for Expr {
+  fn normalize_in(&self, env: &mut Env) -> Expr {
+    match *self {
+      Expr::Const(ref constant) => Expr::Const(constant.clone()),
+      Expr::Var(ref var) => {
+        match env.get_val(var) {
+          Some(ref def) => def.expr().clone(),
+          None => Expr::Var(var.clone()),
+        }
+      }
+      Expr::Lam(ref var, ref ty, ref body) => {
+        env.push(Def::Val(var.clone(), Expr::Var(var.clone())));
+        let ty = ty.normalize_in(env);
+        let body = body.normalize_in(env);
+        let lam = Expr::Lam(var.clone(), Box::new(ty), Box::new(body));
+        env.pop();
+        lam
+      }
+      Expr::Pi(ref var, ref ty, ref body) => {
+        env.push(Def::Ty(var.clone(), Expr::Var(var.clone())));
+        let ty = ty.normalize_in(env);
+        let body = body.normalize_in(env);
+        let pi = Expr::Pi(var.clone(), Box::new(ty), Box::new(body));
+        env.pop();
+        pi
+      }
+      Expr::App(ref f, ref arg) => {
+        let f = f.normalize_in(env);
+        let arg = arg.normalize_in(env);
+        if let Expr::Lam(var, _, body) = f {
+          env.push(Def::Val(var.clone(), arg));
+          let lam = body.normalize_in(env);
+          env.pop();
+          lam
+        } else if let Expr::Pi(var, _, body) = f {
+          env.push(Def::Ty(var.clone(), arg));
+          let pi = body.normalize_in(env);
+          env.pop();
+          pi
+        } else {
+          Expr::App(Box::new(f), Box::new(arg))
+        }
+      }
+    }
+  }
+}
+
 /// Implementations of traits for `Def`
 impl Def {
   pub fn expr(&self) -> &Expr {
@@ -297,16 +357,6 @@ impl Def {
     match *self {
       Val(_, ref e) => e,
       Ty(_, ref e) => e,
-    }
-  }
-}
-
-impl Normalize for Def {
-  fn normalize(&self) -> Def {
-    use self::Def::*;
-    match *self {
-      Val(ref n, ref e) => Def::Val(n.clone(), e.normalize()),
-      Ty(ref n, ref t) => Def::Ty(n.clone(), t.normalize()),
     }
   }
 }
@@ -321,17 +371,26 @@ impl Debug for Def {
   }
 }
 
-/// Implementations of traits for `One`
-impl Normalize for One {
-  fn normalize(&self) -> One {
-    use self::One::*;
+impl Normalize for Def {
+  fn normalize(&self) -> Def {
+    use self::Def::*;
     match *self {
-      Def(ref d) => One::Def(d.normalize()),
-      Expr(ref e) => One::Expr(e.normalize()),
+      Val(ref n, ref e) => Def::Val(n.clone(), e.normalize()),
+      Ty(ref n, ref t) => Def::Ty(n.clone(), t.normalize()),
     }
   }
 }
 
+impl NormalizeIn for Def {
+  fn normalize_in(&self, env: &mut Env) -> Def {
+    match *self {
+      Def::Val(ref var, ref e) => Def::Val(var.clone(), e.normalize_in(env)),
+      Def::Ty(ref var, ref e) => Def::Ty(var.clone(), e.normalize_in(env)),
+    }
+  }
+}
+
+/// Implementations of traits for `One`
 impl Debug for One {
   fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
     use self::One::*;
@@ -342,10 +401,29 @@ impl Debug for One {
   }
 }
 
+impl Normalize for One {
+  fn normalize(&self) -> One {
+    use self::One::*;
+    match *self {
+      Def(ref d) => One::Def(d.normalize()),
+      Expr(ref e) => One::Expr(e.normalize()),
+    }
+  }
+}
+
 /// Implementations of traits for an entire `Mod`
 impl Mod {
   pub fn new(listing: Vec<One>) -> Mod {
     Mod { listing: listing }
+  }
+}
+
+impl Debug for Mod {
+  fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+    for ref o in self.listing.iter() {
+      try!(write!(fmt, "{:?}", o));
+    }
+    Ok(())
   }
 }
 
@@ -359,10 +437,55 @@ impl Normalize for Mod {
   }
 }
 
-impl Debug for Mod {
+/// Implementations of traits for `Env`
+impl Env {
+  pub fn new() -> Env {
+    Env(Vec::new())
+  }
+
+  pub fn get_val(&self, var: &Var) -> Option<&Def> {
+    self.0.iter().rev().find(|def| {
+      match **def {
+        Def::Val(ref v, _) => *v == *var,
+        Def::Ty(_, _) => false,
+      }
+    })
+  }
+
+  pub fn push(&mut self, def: Def) {
+    self.0.push(def)
+  }
+
+  pub fn pop(&mut self) {
+    self.0.pop();
+  }
+
+  pub fn load(&mut self, file: &'static str) {
+    for line in file.lines() {
+      if line.is_empty() || line.starts_with("--") {
+        ()
+      } else if line.len() > 0 {
+        match parse_One(&line[..]) {
+          Ok(one) => {
+            match one {
+              One::Def(ref def) => {
+                let def = def.normalize_in(self);
+                self.push(def);
+              }
+              One::Expr(_) => (),
+            }
+          }
+          Err(error) => println!("Couldn't parse: {:?}", error),
+        }
+      }
+    }
+  }
+}
+
+impl Debug for Env {
   fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
-    for ref o in self.listing.iter() {
-      try!(write!(fmt, "{:?}", o));
+    for def in &self.0 {
+      try!(writeln!(fmt, "{:?}", def));
     }
     Ok(())
   }

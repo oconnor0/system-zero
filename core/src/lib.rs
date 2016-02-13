@@ -3,7 +3,8 @@
 //! System Zero Core defines the core abstract syntax tree for System Zero.
 //! The AST is an implementation of a total, dependently typed lambda calculus.
 //! This is strongly normalizing lambda calculus and a trait to normalize is
-//! implemented.
+//! implemented. An environment for substituting free variables into
+//! expressions is also provided.
 
 extern crate lalrpop_util;
 
