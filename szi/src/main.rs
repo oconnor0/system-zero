@@ -9,6 +9,11 @@ use system_zero_core::ast::*;
 const BOOL: &'static str = include_str!("bool.sz");
 const NAT: &'static str = include_str!("nat.sz");
 
+fn load_prelude(env: &mut Env) {
+  env.load(BOOL);
+  env.load(NAT);
+}
+
 const PROMPT: &'static str = "> ";
 
 fn prompt() -> () {
@@ -19,8 +24,7 @@ fn prompt() -> () {
 fn repl() -> io::Result<()> {
   let mut history: Vec<String> = vec![];
   let mut env = Env::new();
-  env.load(BOOL);
-  env.load(NAT);
+  load_prelude(&mut env);
   prompt();
   let stdin = io::stdin();
   for line in stdin.lock().lines() {
@@ -29,8 +33,11 @@ fn repl() -> io::Result<()> {
       print!("{:?}", env);
     } else if line == ":history" {
       println!("{:?}", history);
-    } else if line == ":quit" {
+    } else if line == ":quit" || line == ":exit" {
       break;
+    } else if line == ":clear" {
+      env.clear();
+      load_prelude(&mut env);
     } else if line.starts_with("--") {
       ()
     } else if line.len() > 0 {
