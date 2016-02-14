@@ -446,6 +446,10 @@ impl Env {
     Env(Vec::new())
   }
 
+  pub fn clear(&mut self) {
+    self.0.clear();
+  }
+
   pub fn get_val(&self, var: &Var) -> Option<&Def> {
     self.0.iter().rev().find(|def| {
       match **def {
