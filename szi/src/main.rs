@@ -7,6 +7,7 @@ use system_zero_core::*;
 use system_zero_core::ast::*;
 
 const BOOL: &'static str = include_str!("bool.sz");
+const NAT: &'static str = include_str!("nat.sz");
 
 const PROMPT: &'static str = "> ";
 
@@ -19,6 +20,7 @@ fn repl() -> io::Result<()> {
   let mut history: Vec<String> = vec![];
   let mut env = Env::new();
   env.load(BOOL);
+  env.load(NAT);
   prompt();
   let stdin = io::stdin();
   for line in stdin.lock().lines() {

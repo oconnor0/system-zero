@@ -1,0 +1,34 @@
+nat : data.
+succ : nat -> nat.
+zero : nat.
+fold_nat : nat -> forall (r : data) -> (r -> r) -> r -> r.
+
+nat = forall (nat : data) -> (nat -> nat) -> nat -> nat.
+zero = \(r : data) -> \(s : r -> r) -> \(z : r) -> z.
+succ = \(n : nat) -> \(r : data) -> \(s : r -> r) -> \(z : r) -> s (n r s z).
+fold_nat = \(n : nat) -> n.
+
+plus : nat -> nat -> nat.
+plus = \(m : nat) -> \(n : nat) -> \(r : data) -> \(s : r -> r) -> \(z : r) -> m r s (n r s z).
+
+one : nat.
+two : nat.
+three : nat.
+four : nat.
+five : nat.
+six : nat.
+seven : nat.
+eight : nat.
+nine : nat.
+ten : nat.
+
+one = succ zero.
+two = succ one.
+three = succ two.
+four = succ three.
+five = succ four.
+six = succ five.
+seven = succ six.
+eight = succ seven.
+nine = succ eight.
+ten = succ nine.
