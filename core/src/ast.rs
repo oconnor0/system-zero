@@ -4,11 +4,12 @@
 //!
 //! Defines AST and traits for debugging and normalizing expressions.
 
+use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Formatter, Error};
 use parser::parse_One;
 
 /// `Const` defines the builtin types of types.
-#[derive(Clone, Copy, Eq, PartialEq)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub enum Const {
   /// `Data` is finite and all functions on it must be total.
   Data,
@@ -17,7 +18,7 @@ pub enum Const {
 }
 
 /// `Var` is the label for a bound variable.
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Var {
   /// `name` is the label.
   name: String,
@@ -26,7 +27,7 @@ pub struct Var {
 }
 
 /// `Expr` represents all computations in System Zero Core.
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub enum Expr {
   // Type system constants
   Const(Const),
@@ -41,28 +42,30 @@ pub enum Expr {
 }
 
 /// `Def`s are bindings between `Var` and values or types.
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub enum Def {
   Val(Var, Expr),
   Ty(Var, Expr),
 }
 
 /// `One` represents one top-level element. It needs a better name.
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub enum One {
   Def(Def),
   Expr(Expr),
 }
 
 /// `Mod` is all of the code for a given module.
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Mod {
   listing: Vec<One>,
 }
 
 /// `Env` defines an environment expressions are normalized in.
-#[derive(Eq, PartialEq)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Env(Vec<Def>);
+
+type BoundVarN = HashMap<Var, u32>;
 
 // # Traits
 
@@ -306,60 +309,149 @@ impl Normalize for Expr {
   }
 }
 
-impl NormalizeIn for Expr {
-  fn normalize_in(&self, env: &mut Env) -> Expr {
-    match *self {
-      Expr::Const(ref constant) => Expr::Const(constant.clone()),
-      Expr::Var(ref var) => {
-        match env.get_val(var) {
-          Some(ref def) => def.expr().clone(),
-          None => Expr::Var(var.clone()),
-        }
+/// Finds all free variables in the given expression.
+fn find_free_vars_rec(expr: &Expr,
+                      bindings: &mut BoundVarN,
+                      free: &mut HashSet<Var>) {
+  match *expr {
+    Expr::Const(_) => (),
+    Expr::Var(ref var) => {
+      if !bindings.contains_key(var) {
+        // Found a free var.
+        free.insert(var.clone());
       }
-      Expr::Lam(ref var, ref ty, ref body) => {
-        env.push(Def::Val(var.clone(), Expr::Var(var.clone())));
-        let ty = ty.normalize_in(env);
-        let body = body.normalize_in(env);
-        let lam = Expr::Lam(var.clone(), Box::new(ty), Box::new(body));
-        env.pop();
-        lam
+    }
+    Expr::Lam(ref var, ref ty, ref body) => {
+      {
+        find_free_vars_rec(ty, bindings, free);
       }
-      Expr::Pi(ref var, ref ty, ref body) => {
-        env.push(Def::Ty(var.clone(), Expr::Var(var.clone())));
-        let ty = ty.normalize_in(env);
-        let body = body.normalize_in(env);
-        let pi = Expr::Pi(var.clone(), Box::new(ty), Box::new(body));
-        env.pop();
-        pi
+      {
+        let counter = bindings.entry(var.clone()).or_insert(0);
+        *counter += 1;
       }
-      Expr::App(ref f, ref arg) => {
-        let f = f.normalize_in(env);
-        let arg = arg.normalize_in(env);
-        if let Expr::Lam(var, _, body) = f {
-          env.push(Def::Val(var.clone(), arg));
-          let lam = body.normalize_in(env);
-          env.pop();
-          lam
-        } else if let Expr::Pi(var, _, body) = f {
-          env.push(Def::Ty(var.clone(), arg));
-          let pi = body.normalize_in(env);
-          env.pop();
-          pi
-        } else {
-          Expr::App(Box::new(f), Box::new(arg))
-        }
+      {
+        find_free_vars_rec(body, bindings, free);
+      }
+      {
+        let counter = bindings.entry(var.clone()).or_insert(0);
+        *counter -= 1;
+      }
+    }
+    Expr::Pi(ref var, ref ty, ref body) => {
+      {
+        find_free_vars_rec(ty, bindings, free);
+      }
+      {
+        let counter = bindings.entry(var.clone()).or_insert(0);
+        *counter += 1;
+      }
+      {
+        find_free_vars_rec(body, bindings, free);
+      }
+      {
+        let counter = bindings.entry(var.clone()).or_insert(0);
+        *counter -= 1;
+      }
+    }
+    Expr::App(ref f, ref arg) => {
+      {
+        find_free_vars_rec(f, bindings, free);
+      }
+      {
+        find_free_vars_rec(arg, bindings, free);
       }
     }
   }
 }
 
+
+fn find_free_vars(expr: &Expr) -> HashSet<Var> {
+  let mut bindings = BoundVarN::new();
+  let mut free = HashSet::new();
+  find_free_vars_rec(expr, &mut bindings, &mut free);
+  free
+}
+
+/// Attempt new normalization technique.
+impl NormalizeIn for Expr {
+  fn normalize_in(&self, env: &mut Env) -> Expr {
+    let mut app = self.clone();
+    for free in find_free_vars(self) {
+      if let Some (ref def_val) = env.get_val(&free) {
+        if let Some (ref def_ty) = env.get_ty(&free) {
+          let lam = Expr::Lam(free.clone(), Box::new(def_ty.expr().clone()), Box::new(app));
+          app = Expr::App(Box::new(lam), Box::new(def_val.expr().clone()));
+        }
+      }
+    }
+    app.normalize()
+  }
+}
+
+// impl NormalizeIn for Expr {
+//   fn normalize_in(&self, env: &mut Env) -> Expr {
+//     match *self {
+//       Expr::Const(ref constant) => Expr::Const(constant.clone()),
+//       Expr::Var(ref var) => {
+//         match env.get_val(var) {
+//           Some(ref def) => def.expr().clone(),
+//           None => Expr::Var(var.clone()),
+//         }
+//       }
+//       Expr::Lam(ref var, ref ty, ref body) => {
+//         env.push(Def::Val(var.clone(), Expr::Var(var.clone())));
+//         let ty = ty.normalize_in(env);
+//         let body = body.normalize_in(env);
+//         let lam = Expr::Lam(var.clone(), Box::new(ty), Box::new(body));
+//         // let lam = Expr::Lam(var.clone(), ty.clone(), Box::new(body));
+//         env.pop();
+//         lam
+//       }
+//       Expr::Pi(ref var, ref ty, ref body) => {
+//         env.push(Def::Ty(var.clone(), Expr::Var(var.clone())));
+//         let ty = ty.normalize_in(env);
+//         let body = body.normalize_in(env);
+//         let pi = Expr::Pi(var.clone(), Box::new(ty), Box::new(body));
+//         // let pi = Expr::Pi(var.clone(), ty.clone(), Box::new(body));
+//         env.pop();
+//         pi
+//       }
+//       Expr::App(ref f, ref arg) => {
+//         let f = f.normalize_in(env);
+//         let arg = arg.normalize_in(env);
+//         if let Expr::Lam(var, _, body) = f {
+//           env.push(Def::Val(var.clone(), arg));
+//           let lam = body.normalize_in(env);
+//           env.pop();
+//           lam
+//         } else if let Expr::Pi(var, _, body) = f {
+//           env.push(Def::Ty(var.clone(), arg));
+//           let pi = body.normalize_in(env);
+//           env.pop();
+//           pi
+//         } else {
+//           Expr::App(Box::new(f), Box::new(arg))
+//         }
+//       }
+//     }
+//   }
+// }
+
 /// Implementations of traits for `Def`
 impl Def {
   pub fn expr(&self) -> &Expr {
-    use self::Def::*;
+    // use self::Def::*;
     match *self {
-      Val(_, ref e) => e,
-      Ty(_, ref e) => e,
+      Def::Val(_, ref e) => e,
+      Def::Ty(_, ref e) => e,
+    }
+  }
+
+  pub fn var(&self) -> &Var {
+    // use self::Def::*;
+    match *self {
+      Def::Val(ref v, _) => v,
+      Def::Ty(ref v, _) => v,
     }
   }
 }
@@ -388,7 +480,7 @@ impl NormalizeIn for Def {
   fn normalize_in(&self, env: &mut Env) -> Def {
     match *self {
       Def::Val(ref var, ref e) => Def::Val(var.clone(), e.normalize_in(env)),
-      Def::Ty(ref var, ref e) => Def::Ty(var.clone(), e.normalize_in(env)),
+      Def::Ty(_, _ /* ref var, ref e */) => self.clone(), //Def::Ty(var.clone(), e.normalize_in(env)),
     }
   }
 }
@@ -459,6 +551,15 @@ impl Env {
     })
   }
 
+  pub fn get_ty(&self, var: &Var) -> Option<&Def> {
+    self.0.iter().rev().find(|def| {
+      match **def {
+        Def::Val(_, _) => false,
+        Def::Ty(ref v, _) => *v == *var,
+      }
+    })
+  }
+
   pub fn push(&mut self, def: Def) {
     self.0.push(def)
   }
@@ -487,6 +588,17 @@ impl Env {
       }
     }
   }
+
+  // fn bindings(&self) -> BoundVarN {
+  //   let mut bvn = BoundVarN::new();
+  //   for ref def in &self.0 {
+  //     if let &Def::Val(ref v, _) = *def {
+  //       let counter = bvn.entry(v.clone()).or_insert(0);
+  //       *counter += 1;
+  //     }
+  //   }
+  //   bvn
+  // }
 }
 
 impl Debug for Env {

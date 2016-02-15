@@ -14,8 +14,11 @@ mod parser;
 use self::lalrpop_util::ParseError;
 
 /// The specific result returned by the defined parse functions.
-pub type Result<'input, T> =
-  std::result::Result<T, ParseError<usize, (usize, &'input str), ()>>;
+pub type Result<'input, T> = std::result::Result<T,
+                                                 ParseError<usize,
+                                                            (usize,
+                                                             &'input str),
+                                                            ()>>;
 
 /// Parses a module in a `&'input str` into either an
 /// `ast::Mod` or reports a `lalrpop_util::ParseError`.
