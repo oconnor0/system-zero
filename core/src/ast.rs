@@ -388,55 +388,6 @@ impl NormalizeIn for Expr {
   }
 }
 
-// impl NormalizeIn for Expr {
-//   fn normalize_in(&self, env: &mut Env) -> Expr {
-//     match *self {
-//       Expr::Const(ref constant) => Expr::Const(constant.clone()),
-//       Expr::Var(ref var) => {
-//         match env.get_val(var) {
-//           Some(ref def) => def.expr().clone(),
-//           None => Expr::Var(var.clone()),
-//         }
-//       }
-//       Expr::Lam(ref var, ref ty, ref body) => {
-//         env.push(Def::Val(var.clone(), Expr::Var(var.clone())));
-//         let ty = ty.normalize_in(env);
-//         let body = body.normalize_in(env);
-//         let lam = Expr::Lam(var.clone(), Box::new(ty), Box::new(body));
-//         // let lam = Expr::Lam(var.clone(), ty.clone(), Box::new(body));
-//         env.pop();
-//         lam
-//       }
-//       Expr::Pi(ref var, ref ty, ref body) => {
-//         env.push(Def::Ty(var.clone(), Expr::Var(var.clone())));
-//         let ty = ty.normalize_in(env);
-//         let body = body.normalize_in(env);
-//         let pi = Expr::Pi(var.clone(), Box::new(ty), Box::new(body));
-//         // let pi = Expr::Pi(var.clone(), ty.clone(), Box::new(body));
-//         env.pop();
-//         pi
-//       }
-//       Expr::App(ref f, ref arg) => {
-//         let f = f.normalize_in(env);
-//         let arg = arg.normalize_in(env);
-//         if let Expr::Lam(var, _, body) = f {
-//           env.push(Def::Val(var.clone(), arg));
-//           let lam = body.normalize_in(env);
-//           env.pop();
-//           lam
-//         } else if let Expr::Pi(var, _, body) = f {
-//           env.push(Def::Ty(var.clone(), arg));
-//           let pi = body.normalize_in(env);
-//           env.pop();
-//           pi
-//         } else {
-//           Expr::App(Box::new(f), Box::new(arg))
-//         }
-//       }
-//     }
-//   }
-// }
-
 /// Implementations of traits for `Def`
 impl Def {
   pub fn expr(&self) -> &Expr {
@@ -588,17 +539,6 @@ impl Env {
       }
     }
   }
-
-  // fn bindings(&self) -> BoundVarN {
-  //   let mut bvn = BoundVarN::new();
-  //   for ref def in &self.0 {
-  //     if let &Def::Val(ref v, _) = *def {
-  //       let counter = bvn.entry(v.clone()).or_insert(0);
-  //       *counter += 1;
-  //     }
-  //   }
-  //   bvn
-  // }
 }
 
 impl Debug for Env {
