@@ -8,10 +8,12 @@ use system_zero_core::ast::*;
 
 const BOOL: &'static str = include_str!("bool.sz");
 const NAT: &'static str = include_str!("nat.sz");
+const LIST: &'static str = include_str!("list.sz");
 
 fn load_prelude(env: &mut Env) {
   env.load(BOOL);
   env.load(NAT);
+  env.load(LIST);
 }
 
 const PROMPT: &'static str = "> ";

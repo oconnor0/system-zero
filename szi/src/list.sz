@@ -1,0 +1,9 @@
+list : data -> data.
+cons : forall (a : data) -> a -> list a -> list a.
+nil : forall (a : data) -> list a.
+foldr : forall (a : data) -> list a -> forall (r : data) -> (a -> r -> r) -> r -> r.
+
+list = \(a : data) -> forall (r : data) -> (a -> r -> r) -> r -> r.
+cons = \(a : data) -> \(x : a) -> \(xs : list a) -> \(r : data) -> \(cons : a -> r -> r) -> \(nil : r) -> cons x (xs r cons nil).
+nil = \(a : data) -> \(r : data) -> \(cons : a -> r -> r) -> \(nil : r) -> nil.
+foldr = \(a : data) -> \(xs : list a) -> xs.
