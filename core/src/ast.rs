@@ -69,6 +69,13 @@ type BoundVarN = HashMap<Var, u32>;
 
 // # Traits
 
+/// `Canonicalize` replaces free variables with bound variables defined in a
+/// given environment by wrapping the `Expr` in a lambda and applying it to the
+/// `Expr` defined in the environment.
+pub trait Canonicalize {
+  fn canonicalize(&self, env: &Env) -> Self;
+}
+
 /// `Normalize` converts the value to a strongly normalized version.
 /// Normalization in a total typed lambda calculus is essentially inlining
 /// until nothing else can be.
@@ -375,16 +382,24 @@ fn find_free_vars(expr: &Expr) -> HashSet<Var> {
 /// Attempt new normalization technique.
 impl NormalizeIn for Expr {
   fn normalize_in(&self, env: &mut Env) -> Expr {
+    self.canonicalize(env).normalize()
+  }
+}
+
+impl Canonicalize for Expr {
+  fn canonicalize(&self, env: &Env) -> Self {
     let mut app = self.clone();
     for free in find_free_vars(self) {
-      if let Some (ref def_val) = env.get_val(&free) {
-        if let Some (ref def_ty) = env.get_ty(&free) {
-          let lam = Expr::Lam(free.clone(), Box::new(def_ty.expr().clone()), Box::new(app));
+      if let Some(ref def_val) = env.get_val(&free) {
+        if let Some(ref def_ty) = env.get_ty(&free) {
+          let lam = Expr::Lam(free.clone(),
+                              Box::new(def_ty.expr().clone()),
+                              Box::new(app));
           app = Expr::App(Box::new(lam), Box::new(def_val.expr().clone()));
         }
       }
     }
-    app.normalize()
+    app
   }
 }
 
