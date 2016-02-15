@@ -7,3 +7,7 @@ list = \(a : data) -> forall (r : data) -> (a -> r -> r) -> r -> r.
 cons = \(a : data) -> \(x : a) -> \(xs : list a) -> \(r : data) -> \(cons : a -> r -> r) -> \(nil : r) -> cons x (xs r cons nil).
 nil = \(a : data) -> \(r : data) -> \(cons : a -> r -> r) -> \(nil : r) -> nil.
 foldr = \(a : data) -> \(xs : list a) -> xs.
+
+
+map : forall (a : data) -> forall (b : data) -> (a -> b) -> list a -> list b.
+map = \(a : data) -> \(b : data) -> \(f : a -> b) -> \(xs : list a) -> foldr a xs (list b) (\(x : a) -> \(xs : list b) -> cons b (f x) xs) (nil b).
