@@ -14,5 +14,6 @@ lalrpop = { path = "../../lalrpop/lalrpop" }
 
 [[bin]]
 doc = false
+test = false
 name = "main"
 path = "src/main.rs"

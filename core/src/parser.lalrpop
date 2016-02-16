@@ -39,7 +39,7 @@ pub Expr: Expr = {
   "forall" "(" <v:Variable> ":" <t:Expr> ")" "->" <b:Expr> =>
     Expr::Pi(v, Box::new(t), Box::new(b)),
   <t:Apply> "->" <b:Expr> =>
-    Expr::Pi(Var::new("", 0), Box::new(t), Box::new(b)),
+    Expr::Pi(Var::new(""), Box::new(t), Box::new(b)),
   Apply => <>,
 };
 
@@ -55,7 +55,7 @@ Term: Expr = {
 };
 
 Variable: Var = {
-  <r"[a-zA-Z_]+[a-zA-Z_0-9]*"> => Var::new(<>, 0)
+  <r"[a-zA-Z_]+[a-zA-Z_0-9]*"> => Var::new(<>)
 };
 
 Constant: Const = {

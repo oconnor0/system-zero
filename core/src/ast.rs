@@ -26,8 +26,6 @@ pub enum Const {
 pub struct Var {
   /// `name` is the label.
   name: String,
-  /// `idx` is the De Bruijn index, in theory.
-  idx: i32,
 }
 
 /// `Expr` represents all computations in System Zero Core.
@@ -135,23 +133,14 @@ impl TypeCheck for Const {
 
 /// Implementations of traits for `Var`
 impl Var {
-  pub fn new<'input>(name: &'input str, idx: i32) -> Var {
-    Var {
-      name: name.to_string(),
-      idx: idx,
-    }
+  pub fn new<'input>(name: &'input str) -> Var {
+    Var { name: name.to_string() }
   }
 }
 
 impl Debug for Var {
   fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
-    if self.name.len() == 0 {
-      Ok(())
-    } else if self.idx == 0 {
-      write!(fmt, "{}", self.name)
-    } else {
-      write!(fmt, "{}@{}", self.name, self.idx)
-    }
+    write!(fmt, "{}", self.name)
   }
 }
 
@@ -626,24 +615,24 @@ fn app(f: Expr, arg: Expr) -> Expr {
 fn test_to_string() {
   let codata = Const::Codata;
   assert_eq!("codata", format!("{:?}", codata));
-  let a = Var::new("a", 0);
-  let x = Var::new("x", 0);
+  let a = Var::new("a");
+  let x = Var::new("x");
   let expra = var(&a);
   let exprx = var(&x);
   assert_eq!("x", format!("{:?}", x));
   let id = pi(a.clone(), constant(Const::Data), lam(x, expra, exprx));
   assert_eq!("forall (a : data) -> \\(x : a) -> x", format!("{:?}", id));
-  let apply_id = app(app(id, var(&Var::new("int", 0))), var(&Var::new("1", 0)));
+  let apply_id = app(app(id, var(&Var::new("int"))), var(&Var::new("1")));
   assert_eq!("(forall (a : data) -> \\(x : a) -> x) int 1",
              format!("{:?}", apply_id));
 }
 
 #[test]
 fn test_id_eq_id2() {
-  let a = Var::new("a", 0);
-  let x = Var::new("x", 0);
-  let id = Var::new("id", 0);
-  let unused = Var::new("", 0);
+  let a = Var::new("a");
+  let x = Var::new("x");
+  let id = Var::new("id");
+  let unused = Var::new("");
   // id's type
   let ty = pi(a.clone(),
               constant(Const::Data),

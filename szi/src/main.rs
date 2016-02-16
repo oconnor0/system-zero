@@ -35,23 +35,23 @@ fn support(line: &String, mut env: &mut Env, history: &Vec<String>) {
     load_prelude(&mut env);
   } else if line.starts_with(":ty ") {
     let name = &line[4..];
-    match env.get_ty(&Var::new(name, 0)) {
+    match env.get_ty(&Var::new(name)) {
       Some(ref def) => println!("{:?}", def),
       None => println!("No type for `{}`", name),
     }
   } else if line.starts_with(":val ") {
     let name = &line[5..];
-    match env.get_val(&Var::new(name, 0)) {
+    match env.get_val(&Var::new(name)) {
       Some(ref def) => println!("{:?}", def),
       None => println!("No value for `{}`", name),
     }
   } else if line.starts_with(":def ") {
     let name = &line[5..];
-    match env.get_ty(&Var::new(name, 0)) {
+    match env.get_ty(&Var::new(name)) {
       Some(ref def) => println!("{:?}", def),
       None => println!("No type for `{}`", name),
     }
-    match env.get_val(&Var::new(name, 0)) {
+    match env.get_val(&Var::new(name)) {
       Some(ref def) => println!("{:?}", def),
       None => println!("No value for `{}`", name),
     }
