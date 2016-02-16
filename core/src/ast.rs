@@ -8,13 +8,17 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Formatter, Error};
 use parser::parse_One;
 
-/// `Const` defines the builtin types of types.
+/// `Const` defines the builtin type constants in the System Zero Core.
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub enum Const {
   /// `Data` is finite and all functions on it must be total.
   Data,
   /// `Codata` is potentially infinite and corecursion must be productive.
   Codata,
+  /// `Box` is the type of `Data`.
+  Box,
+  /// `Cobox` is the type of `Codata`.
+  Cobox,
 }
 
 /// `Var` is the label for a bound variable.
@@ -91,13 +95,40 @@ pub trait NormalizeIn {
   fn normalize_in(&self, &mut Env) -> Self;
 }
 
+/// `TypeError` represents all errors in type checking.
+pub enum TypeError {
+  /// A mismatch between the expected and found types.
+  Mismatch(Expr, Expr),
+  /// A type for the given variable is missing.
+  Missing(Var),
+  /// A given expression cannot be typed.
+  Cannot(Expr),
+}
+
+/// Type checks and either returns its type (as an `Expr`) or a `TypeError`.
+pub trait TypeCheck {
+  fn type_check(&self) -> Result<Expr, TypeError>;
+}
+
 /// Implementations of traits for `Const`
 impl Debug for Const {
   fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
-    use self::Const::*;
     match *self {
-      Data => write!(fmt, "data"),
-      Codata => write!(fmt, "codata"),
+      Const::Data => write!(fmt, "data"),
+      Const::Codata => write!(fmt, "codata"),
+      Const::Box => write!(fmt, "box"),
+      Const::Cobox => write!(fmt, "cobox"),
+    }
+  }
+}
+
+impl TypeCheck for Const {
+  fn type_check(&self) -> Result<Expr, TypeError> {
+    match *self {
+      Const::Data => Ok(Expr::Const(Const::Box)),
+      Const::Codata => Ok(Expr::Const(Const::Cobox)),
+      Const::Box => Err(TypeError::Cannot(Expr::Const(Const::Box))),
+      Const::Cobox => Err(TypeError::Cannot(Expr::Const(Const::Cobox))),
     }
   }
 }
