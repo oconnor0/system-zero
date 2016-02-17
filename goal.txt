@@ -19,7 +19,6 @@ or x y = if x bool true y.
 xor : bool -> bool -> bool.
 xor x y = if x bool (not y) y.
 
-
 -- normalize identity on int
 (forall (a : data) -> (x : a) -> x) int 1
 
@@ -73,7 +72,6 @@ exists b. b -> b.
 
 forall a. free f a
 
-
 list : (a : data) -> data.
 nil : list a.
 cons : a -> list a -> list a.
@@ -89,3 +87,8 @@ foldl : (b -> a -> b) -> b -> list a -> b.
 stream : (a : data) -> codata.
 nil : stream a.
 cons : a -> stream a -> stream a.
+
+algebra f a : f a -> a.
+coalgebra f a : a -> f a.
+
+stream : data -> codata.
