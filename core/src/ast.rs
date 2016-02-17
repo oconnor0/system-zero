@@ -136,6 +136,8 @@ impl Var {
   pub fn new<'input>(name: &'input str) -> Var {
     Var { name: name.to_string() }
   }
+
+  pub fn unused() -> Var { Var { name: "".to_string() } }
 }
 
 impl Debug for Var {
@@ -146,22 +148,6 @@ impl Debug for Var {
 
 /// Implementations of traits for `Expr`
 impl Expr {
-  pub fn constant(constant: Const) -> Expr {
-    Expr::Const(constant)
-  }
-  pub fn var(v: &Var) -> Expr {
-    Expr::Var(v.clone())
-  }
-  pub fn lam(var: Var, ty: Expr, body: Expr) -> Expr {
-    Expr::Lam(var, Box::new(ty), Box::new(body))
-  }
-  pub fn pi(var: Var, ty: Expr, body: Expr) -> Expr {
-    Expr::Pi(var, Box::new(ty), Box::new(body))
-  }
-  pub fn app(f: Expr, arg: Expr) -> Expr {
-    Expr::App(Box::new(f), Box::new(arg))
-  }
-
   pub fn is_constant(&self) -> bool {
     match *self {
       Expr::Const(_) => true,
@@ -466,7 +452,8 @@ impl NormalizeIn for Def {
   fn normalize_in(&self, env: &mut Env) -> Def {
     match *self {
       Def::Val(ref var, ref e) => Def::Val(var.clone(), e.normalize_in(env)),
-      Def::Ty(_, _ /* ref var, ref e */) => self.clone(), //Def::Ty(var.clone(), e.normalize_in(env)),
+      Def::Ty(_, _) => self.clone(),
+      // Def::Ty(ref var, ref e) => Def::Ty(var.clone(), e.normalize_in(env)),
     }
   }
 }
@@ -474,29 +461,25 @@ impl NormalizeIn for Def {
 /// Implementations of traits for `One`
 impl Debug for One {
   fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
-    use self::One::*;
     match *self {
-      Def(ref d) => write!(fmt, "{:?}\n", d),
-      Expr(ref e) => write!(fmt, "{:?}.\n", e),
+      One::Def(ref d) => write!(fmt, "{:?}\n", d),
+      One::Expr(ref e) => write!(fmt, "{:?}.\n", e),
     }
   }
 }
 
 impl Normalize for One {
   fn normalize(&self) -> One {
-    use self::One::*;
     match *self {
-      Def(ref d) => One::Def(d.normalize()),
-      Expr(ref e) => One::Expr(e.normalize()),
+      One::Def(ref d) => One::Def(d.normalize()),
+      One::Expr(ref e) => One::Expr(e.normalize()),
     }
   }
 }
 
 /// Implementations of traits for an entire `Mod`
 impl Mod {
-  pub fn new(listing: Vec<One>) -> Mod {
-    Mod { listing: listing }
-  }
+  pub fn new(listing: Vec<One>) -> Mod { Mod { listing: listing } }
 }
 
 impl Debug for Mod {
@@ -520,13 +503,9 @@ impl Normalize for Mod {
 
 /// Implementations of traits for `Env`
 impl Env {
-  pub fn new() -> Env {
-    Env(Vec::new())
-  }
+  pub fn new() -> Env { Env(Vec::new()) }
 
-  pub fn clear(&mut self) {
-    self.0.clear();
-  }
+  pub fn clear(&mut self) { self.0.clear(); }
 
   pub fn get_val(&self, var: &Var) -> Option<&Def> {
     self.0.iter().rev().find(|def| {
@@ -546,13 +525,9 @@ impl Env {
     })
   }
 
-  pub fn push(&mut self, def: Def) {
-    self.0.push(def)
-  }
+  pub fn push(&mut self, def: Def) { self.0.push(def) }
 
-  pub fn pop(&mut self) {
-    self.0.pop();
-  }
+  pub fn pop(&mut self) { self.0.pop(); }
 
   pub fn load(&mut self, file: &'static str) {
     for line in file.lines() {
@@ -583,69 +558,4 @@ impl Debug for Env {
     }
     Ok(())
   }
-}
-
-/// Tests for AST
-#[cfg(test)]
-fn constant(c: Const) -> Expr {
-  Expr::constant(c)
-}
-
-#[cfg(test)]
-fn var(v: &Var) -> Expr {
-  Expr::var(v)
-}
-
-#[cfg(test)]
-fn lam(var: Var, ty: Expr, body: Expr) -> Expr {
-  Expr::lam(var, ty, body)
-}
-
-#[cfg(test)]
-fn pi(var: Var, ty: Expr, body: Expr) -> Expr {
-  Expr::pi(var, ty, body)
-}
-
-#[cfg(test)]
-fn app(f: Expr, arg: Expr) -> Expr {
-  Expr::app(f, arg)
-}
-
-#[test]
-fn test_to_string() {
-  let codata = Const::Codata;
-  assert_eq!("codata", format!("{:?}", codata));
-  let a = Var::new("a");
-  let x = Var::new("x");
-  let expra = var(&a);
-  let exprx = var(&x);
-  assert_eq!("x", format!("{:?}", x));
-  let id = pi(a.clone(), constant(Const::Data), lam(x, expra, exprx));
-  assert_eq!("forall (a : data) -> \\(x : a) -> x", format!("{:?}", id));
-  let apply_id = app(app(id, var(&Var::new("int"))), var(&Var::new("1")));
-  assert_eq!("(forall (a : data) -> \\(x : a) -> x) int 1",
-             format!("{:?}", apply_id));
-}
-
-#[test]
-fn test_id_eq_id2() {
-  let a = Var::new("a");
-  let x = Var::new("x");
-  let id = Var::new("id");
-  let unused = Var::new("");
-  // id's type
-  let ty = pi(a.clone(),
-              constant(Const::Data),
-              pi(unused, Expr::var(&a), Expr::var(&a)));
-  // id's implementation
-  let id_impl = lam(a.clone(),
-                    constant(Const::Data),
-                    lam(x.clone(), Expr::var(&a), Expr::var(&x)));
-  // implementation of id applied to itself applied to id
-  let id2app = app(lam(id.clone(),
-                       ty.clone(),
-                       app(app(Expr::var(&id.clone()), ty.clone()),
-                           Expr::var(&id.clone()))),
-                   id_impl.clone());
-  assert_eq!(id2app.normalize(), id_impl);
 }

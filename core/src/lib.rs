@@ -10,6 +10,8 @@ extern crate lalrpop_util;
 
 pub mod ast;
 mod parser;
+#[cfg(test)]
+mod test;
 
 use self::lalrpop_util::ParseError;
 
