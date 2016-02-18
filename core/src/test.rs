@@ -12,8 +12,9 @@ use ast::*;
 
 /// Tests for AST
 
+fn id(v: &str) -> Var { Var::new(v) }
 fn constant(c: Const) -> Box<Expr> { Box::new(Expr::Const(c)) }
-fn var(v: &str) -> Box<Expr> { Box::new(Expr::Var(Var::new(v))) }
+fn var(v: &str) -> Box<Expr> { Box::new(Expr::Var(id(v))) }
 fn lam(var: Var, ty: Box<Expr>, body: Box<Expr>) -> Box<Expr> {
   Box::new(Expr::Lam(var, ty, body))
 }
@@ -40,7 +41,7 @@ fn test_const_to_string() {
 
 #[test]
 fn test_var_to_string() {
-  assert_eq!("a", format!("{:?}", Var::new("a")));
+  assert_eq!("a", format!("{:?}", id("a")));
   assert_eq!("b", format!("{:?}", var("b")));
 }
 
@@ -49,9 +50,9 @@ fn test_lam_to_string() {
   use ast::Const::*;
   assert_eq!("\\(a : data) -> \\(b : a) -> b",
              format!("{:?}",
-                     lam(Var::new("a"),
+                     lam(id("a"),
                          constant(Data),
-                         lam(Var::new("b"), var("a"), var("b")))));
+                         lam(id("b"), var("a"), var("b")))));
 }
 
 #[test]
@@ -59,9 +60,9 @@ fn test_pi_to_string() {
   use ast::Const::*;
   assert_eq!("forall (a : codata) -> a -> a",
              format!("{:?}",
-                     pi(Var::new("a"),
+                     pi(id("a"),
                         constant(Codata),
-                        pi(Var::new(""), var("a"), var("a")))));
+                        pi(id(""), var("a"), var("a")))));
 }
 
 #[test]
@@ -69,9 +70,9 @@ fn test_app_to_string() {
   use ast::Const::*;
   assert_eq!("(\\(a : data) -> \\(b : a) -> b) int one",
              format!("{:?}",
-                     app(app(lam(Var::new("a"),
+                     app(app(lam(id("a"),
                                  constant(Data),
-                                 lam(Var::new("b"), var("a"), var("b"))),
+                                 lam(id("b"), var("a"), var("b"))),
                              var("int")),
                          var("one"))));
   assert_eq!("a b c (d e)",
@@ -88,14 +89,14 @@ fn test_app_to_string() {
 #[test]
 fn test_id_eq_id2() {
   use ast::Const::*;
-  let a = Var::new("a");
-  let x = Var::new("x");
-  let id = Var::new("id");
+  let a = id("a");
+  let x = id("x");
+  let id = id("id");
   let unused = Var::unused();
   // id's type
   let ty = pi(a.clone(), constant(Data), pi(unused, var("a"), var("a")));
   // id's implementation
-  let id_impl = lam(Var::new("a"),
+  let id_impl = lam(id("a"),
                     constant(Data),
                     lam(x.clone(), var("a"), var("x")));
   // implementation of id applied to itself applied to id
