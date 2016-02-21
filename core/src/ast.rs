@@ -4,12 +4,13 @@
 //!
 //! Defines AST and traits for debugging and normalizing expressions.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BinaryHeap, HashMap, HashSet};
 use std::fmt::{Debug, Formatter, Error};
+use std::iter::{Enumerate, FromIterator, IntoIterator, Iterator};
 use parser::parse_One;
 
 /// `Const` defines the builtin type constants in the System Zero Core.
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Const {
   /// `Data` is finite and all functions on it must be total.
   Data,
@@ -22,14 +23,14 @@ pub enum Const {
 }
 
 /// `Var` is the label for a bound variable.
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Var {
   /// `name` is the label.
   name: String,
 }
 
 /// `Expr` represents all computations in System Zero Core.
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Expr {
   // Type system constants
   Const(Const),
@@ -44,27 +45,27 @@ pub enum Expr {
 }
 
 /// `Def`s are bindings between `Var` and values or types.
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Def {
   Val(Var, Expr),
   Ty(Var, Expr),
 }
 
 /// `One` represents one top-level element. It needs a better name.
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum One {
   Def(Def),
   Expr(Expr),
 }
 
 /// `Mod` is all of the code for a given module.
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Mod {
   listing: Vec<One>,
 }
 
 /// `Env` defines an environment expressions are normalized in.
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Env(Vec<Def>);
 
 type BoundVarN = HashMap<Var, u32>;
@@ -385,6 +386,23 @@ fn find_free_vars(expr: &Expr) -> HashSet<Var> {
   free
 }
 
+fn sort_free_vars(frees: HashSet<Var>, env: &Env) -> Vec<Var> {
+  let mut heap: BinaryHeap<(usize, Var)> = BinaryHeap::new();
+  for (i, &ref def) in (0..).zip(&env.0) {
+    match def {
+      &Def::Ty(_, _) => (),
+      &Def::Val(ref v, _) => if frees.contains(v) {
+        heap.push((i, v.clone()));
+        ()
+      }
+    }
+  }
+  // println!("{:?}", heap);
+  let v = heap.into_sorted_vec().into_iter().rev().map(|x| x.1).collect();
+  // println!("{:?}", v);
+  v
+}
+
 /// Attempt new normalization technique.
 impl NormalizeIn for Expr {
   fn normalize_in(&self, env: &mut Env) -> Expr {
@@ -395,7 +413,9 @@ impl NormalizeIn for Expr {
 impl Canonicalize for Expr {
   fn canonicalize(&self, env: &Env) -> Self {
     let mut app = self.clone();
-    for free in find_free_vars(self) {
+    let frees = sort_free_vars(find_free_vars(self), env);
+    // println!("self {:?} free {:?}", self, frees);
+    for free in frees {
       if let Some(ref def_val) = env.get_val(&free) {
         if let Some(ref def_ty) = env.get_ty(&free) {
           let lam = Expr::Lam(free.clone(),
@@ -405,6 +425,7 @@ impl Canonicalize for Expr {
         }
       }
     }
+    println!("free {:?} {:?}", sort_free_vars(find_free_vars(self), env), app);
     app
   }
 }
