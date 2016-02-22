@@ -95,6 +95,7 @@ pub trait NormalizeIn {
 }
 
 /// `TypeError` represents all errors in type checking.
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum TypeError {
   /// A mismatch between the expected and found types.
   Mismatch(Expr, Expr),
@@ -102,11 +103,18 @@ pub enum TypeError {
   Missing(Var),
   /// A given expression cannot be typed.
   Cannot(Expr),
+  /// A bad function type.
+  BadPi(Expr, Expr),
+  /// Expression isn't a function when one is required.
+  NotAFunction(Expr),
+  /// Haven't gotten to this yet.
+  NotYet,
 }
 
-/// Type checks and either returns its type (as an `Expr`) or a `TypeError`.
+/// Type checks in an environment and either returns its type (as an `Expr`)
+/// or a `TypeError`.
 pub trait TypeCheck {
-  fn type_check(&self) -> Result<Expr, TypeError>;
+  fn type_check(&self, env: &Env) -> Result<Expr, TypeError>;
 }
 
 /// Implementations of traits for `Const`
@@ -122,13 +130,39 @@ impl Debug for Const {
 }
 
 impl TypeCheck for Const {
-  fn type_check(&self) -> Result<Expr, TypeError> {
+  fn type_check(&self, _: &Env) -> Result<Expr, TypeError> {
     match *self {
       Const::Data => Ok(Expr::Const(Const::Box)),
       Const::Codata => Ok(Expr::Const(Const::Cobox)),
       Const::Box => Err(TypeError::Cannot(Expr::Const(Const::Box))),
       Const::Cobox => Err(TypeError::Cannot(Expr::Const(Const::Cobox))),
     }
+  }
+}
+
+// take : nat -> stream a -> list a.
+// nats : nat -> stream nat.
+//
+
+/// Defines allowed typing of lambda cube.
+pub fn rule(a: Const, b: Const) -> Result<Expr, TypeError> {
+  match (a, b) {
+    (Const::Data, Const::Data) => Ok(Expr::Const(Const::Data)),
+    (Const::Data, Const::Codata) => Ok(Expr::Const(Const::Codata)),
+    (Const::Data, Const::Box) => Ok(Expr::Const(Const::Box)),
+    (Const::Data, Const::Cobox) => Ok(Expr::Const(Const::Cobox)),
+    (Const::Codata, Const::Data) => Ok(Expr::Const(Const::Data)),
+    (Const::Codata, Const::Codata) => Ok(Expr::Const(Const::Codata)),
+    (Const::Codata, Const::Box) => Ok(Expr::Const(Const::Box)),
+    (Const::Codata, Const::Cobox) => Ok(Expr::Const(Const::Cobox)),
+    (Const::Box, Const::Data) => Ok(Expr::Const(Const::Data)),
+    (Const::Box, Const::Codata) => Ok(Expr::Const(Const::Codata)),
+    (Const::Box, Const::Box) => Ok(Expr::Const(Const::Box)),
+    (Const::Box, Const::Cobox) => Ok(Expr::Const(Const::Cobox)),
+    (Const::Cobox, Const::Data) => Ok(Expr::Const(Const::Data)),
+    (Const::Cobox, Const::Codata) => Ok(Expr::Const(Const::Codata)),
+    (Const::Cobox, Const::Box) => Ok(Expr::Const(Const::Box)),
+    (Const::Cobox, Const::Cobox) => Ok(Expr::Const(Const::Cobox)),
   }
 }
 
@@ -144,6 +178,15 @@ impl Var {
 impl Debug for Var {
   fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
     write!(fmt, "{}", self.name)
+  }
+}
+
+impl TypeCheck for Var {
+  fn type_check(&self, env: &Env) -> Result<Expr, TypeError> {
+    match env.get_ty(self) {
+      None => Err(TypeError::Missing(self.clone())),
+      Some(ref def) => Ok(def.expr().clone()),
+    }
   }
 }
 
@@ -378,7 +421,6 @@ fn find_free_vars_rec(expr: &Expr,
   }
 }
 
-
 fn find_free_vars(expr: &Expr) -> HashSet<Var> {
   let mut bindings = BoundVarN::new();
   let mut free = HashSet::new();
@@ -391,9 +433,11 @@ fn sort_free_vars(frees: HashSet<Var>, env: &Env) -> Vec<Var> {
   for (i, &ref def) in (0..).zip(&env.0) {
     match def {
       &Def::Ty(_, _) => (),
-      &Def::Val(ref v, _) => if frees.contains(v) {
-        heap.push((i, v.clone()));
-        ()
+      &Def::Val(ref v, _) => {
+        if frees.contains(v) {
+          heap.push((i, v.clone()));
+          ()
+        }
       }
     }
   }
@@ -425,8 +469,59 @@ impl Canonicalize for Expr {
         }
       }
     }
-    println!("free {:?} {:?}", sort_free_vars(find_free_vars(self), env), app);
+    println!("free {:?} {:?}",
+             sort_free_vars(find_free_vars(self), env),
+             app);
     app
+  }
+}
+
+/// Type check expressions.
+impl TypeCheck for Expr {
+  fn type_check(&self, env: &Env) -> Result<Expr, TypeError> {
+    match *self {
+      Expr::Const(ref c) => c.type_check(env),
+      Expr::Var(ref var) => var.type_check(env),
+      Expr::Lam(ref var, ref ty, ref body) => {
+        let ty_ty = try!(ty.type_check(env));
+        let mut env = env.clone();
+        env.push(Def::Ty(var.clone(), *ty.clone()));
+        let body_ty = try!(body.type_check(&env));
+        Ok(Expr::Pi(var.clone(), ty.clone(), Box::new(body_ty)))
+      }
+      Expr::Pi(ref var, ref ty, ref body) => {
+        let ty_ty = try!(ty.type_check(env));
+        let mut env = env.clone();
+        env.push(Def::Ty(var.clone(), *ty.clone()));
+        let body_ty = try!(body.type_check(&env));
+        match (&ty_ty, &body_ty) {
+          (&Expr::Const(ref t), &Expr::Const(ref b)) => {
+            rule(t.clone(), b.clone())
+          }
+          _ => Err(TypeError::BadPi(ty_ty.clone(), body_ty.clone())),
+        }
+      }
+      Expr::App(ref f, ref arg) => {
+        let f_ty = try!(f.type_check(env));
+        match f_ty.normalize_in(&mut env.clone()) {
+          Expr::Pi(ref var, ref ty, ref body) => {
+            println!("f arg ty {:?}", ty);
+            let mut arg_e = env.clone();
+            let arg_ty = try!(ty.normalize_in(&mut arg_e).type_check(env));
+                           // .normalize_in(&mut env.clone());
+            if arg_ty == **ty {
+              Err(TypeError::NotYet)
+            } else {
+              Err(TypeError::Mismatch(*ty.clone(), arg_ty.clone()))
+            }
+          }
+          _ => {
+            Err(TypeError::NotAFunction(f.normalize_in(&mut env.clone())
+                                         .clone()))
+          }
+        }
+      }
+    }
   }
 }
 

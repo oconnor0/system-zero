@@ -63,12 +63,16 @@ fn eval<'input>(line: &'input str, mut env: &mut Env) -> Result<'input, One> {
     Ok(one) => {
       match one {
         One::Def(ref def) => {
+          println!(":type = {:?}", def.expr().type_check(&env));
           let def = def.normalize_in(&mut env);
           let one = One::Def(def.clone());
           env.push(def);
           Ok(one)
         }
-        One::Expr(ref e) => Ok(One::Expr(e.normalize_in(&mut env))),
+        One::Expr(ref e) => {
+          println!(":type = {:?}", e.type_check(&env));
+          Ok(One::Expr(e.normalize_in(&mut env)))
+        }
       }
     }
     Err(error) => Err(error),
