@@ -5,12 +5,10 @@ authors = ["Matthew O'Connor <thegreendragon@gmail.com>"]
 build = "build.rs"
 
 [dependencies]
-lalrpop-util = { path = "../../lalrpop/lalrpop-util" }
-# lalrpop-util = "0.9.0"
+lalrpop-util = "0.10.0"
 
 [build-dependencies]
-lalrpop = { path = "../../lalrpop/lalrpop" }
-# lalrpop = "0.9.0"
+lalrpop = "0.10.0"
 
 [[bin]]
 doc = false
