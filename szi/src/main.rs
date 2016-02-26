@@ -11,9 +11,9 @@ const NAT: &'static str = include_str!("nat.sz");
 const LIST: &'static str = include_str!("list.sz");
 
 fn load_prelude(env: &mut Env) {
-  env.load(BOOL);
-  env.load(NAT);
-  env.load(LIST);
+  // env.load(BOOL);
+  // env.load(NAT);
+  // env.load(LIST);
 }
 
 const PROMPT: &'static str = "> ";
@@ -29,7 +29,7 @@ fn support(line: &String, mut env: &mut Env, history: &Vec<String>) {
   } else if line == ":history" {
     println!("{:?}", history);
   } else if line == ":quit" || line == ":exit" {
-    std::process::exit(1);
+    std::process::exit(0);
   } else if line == ":clear" {
     env.clear();
     load_prelude(&mut env);
@@ -71,6 +71,9 @@ fn eval<'input>(line: &'input str, mut env: &mut Env) -> Result<'input, One> {
         }
         One::Expr(ref e) => {
           println!(":type = {:?}", e.type_check(&env));
+          println!("canonical is {:?}", e.canonicalize(&env));
+          println!("canonical normalized is {:?}",
+                   e.canonicalize(&env).normalize());
           Ok(One::Expr(e.normalize_in(&mut env)))
         }
       }
@@ -94,7 +97,7 @@ fn repl() -> io::Result<()> {
       support(&line, &mut env, &history);
     } else if line.len() > 0 {
       match eval(&line[..], &mut env) {
-        Ok(one) => print!("{:?}", one),
+        Ok(one) => print!("normalized is {:?}", one),
         Err(error) => println!("Couldn't parse: {:?}", error),
       }
     }
