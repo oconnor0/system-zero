@@ -27,6 +27,9 @@ pub enum Const {
 pub struct Var {
   /// `name` is the label.
   name: String,
+  /// `idx` is which `name` this `Var` represents. `0` is the nearest
+  /// definition.
+  idx: u32,
 }
 
 /// `Expr` represents all computations in System Zero Core.
@@ -107,6 +110,8 @@ pub enum TypeError {
   BadPi(Expr, Expr),
   /// Expression isn't a function when one is required.
   NotAFunction(Expr),
+  /// This part of the lambda cube isn't supported.
+  Disallowed(Const, Const),
   /// Haven't gotten to this yet.
   NotYet,
 }
@@ -140,52 +145,73 @@ impl TypeCheck for Const {
   }
 }
 
-// take : nat -> stream a -> list a.
-// nats : nat -> stream nat.
-//
-
 /// Defines allowed typing of lambda cube.
 pub fn rule(a: Const, b: Const) -> Result<Expr, TypeError> {
   match (a, b) {
     (Const::Data, Const::Data) => Ok(Expr::Const(Const::Data)),
-    (Const::Data, Const::Codata) => Ok(Expr::Const(Const::Codata)),
+    // (Const::Data, Const::Codata) => Ok(Expr::Const(Const::Codata)),
     (Const::Data, Const::Box) => Ok(Expr::Const(Const::Box)),
-    (Const::Data, Const::Cobox) => Ok(Expr::Const(Const::Cobox)),
-    (Const::Codata, Const::Data) => Ok(Expr::Const(Const::Data)),
-    (Const::Codata, Const::Codata) => Ok(Expr::Const(Const::Codata)),
-    (Const::Codata, Const::Box) => Ok(Expr::Const(Const::Box)),
-    (Const::Codata, Const::Cobox) => Ok(Expr::Const(Const::Cobox)),
+    // (Const::Data, Const::Cobox) => Ok(Expr::Const(Const::Cobox)),
+    // (Const::Codata, Const::Data) => Ok(Expr::Const(Const::Data)),
+    // (Const::Codata, Const::Codata) => Ok(Expr::Const(Const::Codata)),
+    // (Const::Codata, Const::Box) => Ok(Expr::Const(Const::Box)),
+    // (Const::Codata, Const::Cobox) => Ok(Expr::Const(Const::Cobox)),
     (Const::Box, Const::Data) => Ok(Expr::Const(Const::Data)),
-    (Const::Box, Const::Codata) => Ok(Expr::Const(Const::Codata)),
+    // (Const::Box, Const::Codata) => Ok(Expr::Const(Const::Codata)),
     (Const::Box, Const::Box) => Ok(Expr::Const(Const::Box)),
-    (Const::Box, Const::Cobox) => Ok(Expr::Const(Const::Cobox)),
-    (Const::Cobox, Const::Data) => Ok(Expr::Const(Const::Data)),
-    (Const::Cobox, Const::Codata) => Ok(Expr::Const(Const::Codata)),
-    (Const::Cobox, Const::Box) => Ok(Expr::Const(Const::Box)),
-    (Const::Cobox, Const::Cobox) => Ok(Expr::Const(Const::Cobox)),
+    // (Const::Box, Const::Cobox) => Ok(Expr::Const(Const::Cobox)),
+    // (Const::Cobox, Const::Data) => Ok(Expr::Const(Const::Data)),
+    // (Const::Cobox, Const::Codata) => Ok(Expr::Const(Const::Codata)),
+    // (Const::Cobox, Const::Box) => Ok(Expr::Const(Const::Box)),
+    // (Const::Cobox, Const::Cobox) => Ok(Expr::Const(Const::Cobox)),
+    (a, b) => Err(TypeError::Disallowed(a, b)),
   }
 }
 
 /// Implementations of traits for `Var`
 impl Var {
   pub fn new<'input>(name: &'input str) -> Var {
-    Var { name: name.to_string() }
+    Var {
+      name: name.to_string(),
+      idx: 0,
+    }
   }
 
-  pub fn unused() -> Var { Var { name: "".to_string() } }
+  pub fn shift(&self) -> Var {
+    Var {
+      name: self.name.to_string(),
+      idx: self.idx + 1,
+    }
+  }
+
+  pub fn unused() -> Var {
+    Var {
+      name: "".to_string(),
+      idx: 0,
+    }
+  }
 }
 
 impl Debug for Var {
   fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
-    write!(fmt, "{}", self.name)
+    if self.idx == 0 {
+      write!(fmt, "{}", self.name)
+    } else {
+      write!(fmt, "{}__{}", self.name, self.idx)
+    }
   }
 }
 
 impl TypeCheck for Var {
   fn type_check(&self, env: &Env) -> Result<Expr, TypeError> {
-    match env.get_ty(self) {
+    match env.get(self) {
       None => Err(TypeError::Missing(self.clone())),
-      Some(ref def) => Ok(def.expr().clone()),
+      Some(ref def) => {
+        match **def {
+          Def::Ty(_, ref e) => Ok(e.clone()),
+          Def::Val(_, ref e) => e.type_check(&env),
+        }
+      }
     }
   }
 }
@@ -226,40 +252,47 @@ impl Expr {
 
 fn replace(val: &Var, with: &Expr, body: &Expr) -> Expr {
   use self::Expr::*;
-  // println!("replace {} with {} in {}",
-  //          val.to_string(),
-  //          with.to_string(),
-  //          body.to_string());
+  println!("replace {:?} with {:?} in {:?}", val, with, body);
   match *body {
     Const(_) => body.clone(),
     Var(ref var) => {
       if *var == *val {
         with.clone()
+        // replace(&val.shift(), with, body)
       } else {
         body.clone()
+        // Var(var.clone())
       }
     }
     Lam(ref var, ref ty, ref body) => {
-      if *val == *var {
-        // println!("stopping at {}", val.to_string());
-        Lam(var.clone(), ty.clone(), body.clone())
+      if *var == *val {
+        let val = val.shift();
+        let ty = Box::new(replace(&val, with, &ty));
+        let body = Box::new(replace(&val, with, &body));
+        let lam = Lam(var.clone(), ty, body);
+        println!("replaced = {:?}", lam);
+        lam
       } else {
         let ty = Box::new(replace(val, with, &ty));
         let body = Box::new(replace(val, with, &body));
         let lam = Lam(var.clone(), ty, body);
-        // println!("replaced = {}", lam.to_string());
+        println!("replaced = {:?}", lam);
         lam
       }
     }
     Pi(ref var, ref ty, ref body) => {
       if *val == *var {
-        // println!("stopping at {}", val.to_string());
-        Pi(var.clone(), ty.clone(), body.clone())
+        let val = val.shift();
+        let ty = Box::new(replace(&val, with, &ty));
+        let body = Box::new(replace(&val, with, &body));
+        let pi = Pi(var.clone(), ty, body);
+        println!("replaced = {:?}", pi);
+        pi
       } else {
         let ty = Box::new(replace(val, with, &ty));
         let body = Box::new(replace(val, with, &body));
         let pi = Pi(var.clone(), ty, body);
-        // println!("replaced = {}", pi.to_string());
+        println!("replaced = {:?}", pi);
         pi
       }
     }
@@ -267,7 +300,7 @@ fn replace(val: &Var, with: &Expr, body: &Expr) -> Expr {
       let f = Box::new(replace(val, with, &f));
       let arg = Box::new(replace(val, with, &arg));
       let app = App(f, arg);
-      // println!("replaced = {}", app.to_string());
+      println!("replaced = {:?}", app);
       app
     }
   }
@@ -346,16 +379,17 @@ impl Normalize for Expr {
         p.clone()
       }
       App(ref f, ref arg) => {
+        println!("normalizing application ({:?}) {:?}", f, arg);
         let f = f.normalize();
         // let f = *f.clone();
         let arg = arg.normalize();
         if let Lam(var, _, body) = f {
           let lam = replace(&var, &arg, &body).normalize();
-          // println!("normalized = {}", lam.to_string());
+          println!("normalized = {:?}", lam);
           lam
         } else if let Pi(var, _, body) = f {
           let pi = replace(&var, &arg, &body).normalize();
-          // println!("normalized = {}", pi.to_string());
+          println!("normalized = {:?}", pi);
           pi
         } else {
           // panic!("f isn't a function {}", f.to_string())
@@ -469,9 +503,9 @@ impl Canonicalize for Expr {
         }
       }
     }
-    println!("free {:?} {:?}",
-             sort_free_vars(find_free_vars(self), env),
-             app);
+    // println!("free {:?} {:?}",
+    //          sort_free_vars(find_free_vars(self), env),
+    //          app);
     app
   }
 }
@@ -487,6 +521,7 @@ impl TypeCheck for Expr {
         let mut env = env.clone();
         env.push(Def::Ty(var.clone(), *ty.clone()));
         let body_ty = try!(body.type_check(&env));
+        // env.pop();
         Ok(Expr::Pi(var.clone(), ty.clone(), Box::new(body_ty)))
       }
       Expr::Pi(ref var, ref ty, ref body) => {
@@ -494,6 +529,7 @@ impl TypeCheck for Expr {
         let mut env = env.clone();
         env.push(Def::Ty(var.clone(), *ty.clone()));
         let body_ty = try!(body.type_check(&env));
+        // env.pop();
         match (&ty_ty, &body_ty) {
           (&Expr::Const(ref t), &Expr::Const(ref b)) => {
             rule(t.clone(), b.clone())
@@ -507,10 +543,13 @@ impl TypeCheck for Expr {
           Expr::Pi(ref var, ref ty, ref body) => {
             println!("f arg ty {:?}", ty);
             let mut arg_e = env.clone();
-            let arg_ty = try!(ty.normalize_in(&mut arg_e).type_check(env));
-                           // .normalize_in(&mut env.clone());
+            let arg_ty = try!(arg.normalize_in(&mut arg_e).type_check(env));
+            // .normalize_in(&mut env.clone());
+            println!("app arg ty {:?}", arg_ty);
             if arg_ty == **ty {
-              Err(TypeError::NotYet)
+              // Err(TypeError::NotYet)
+              let mut body_e = env.clone();
+              replace(var, arg, body).type_check(&mut body_e)
             } else {
               Err(TypeError::Mismatch(*ty.clone(), arg_ty.clone()))
             }
@@ -528,7 +567,6 @@ impl TypeCheck for Expr {
 /// Implementations of traits for `Def`
 impl Def {
   pub fn expr(&self) -> &Expr {
-    // use self::Def::*;
     match *self {
       Def::Val(_, ref e) => e,
       Def::Ty(_, ref e) => e,
@@ -536,7 +574,6 @@ impl Def {
   }
 
   pub fn var(&self) -> &Var {
-    // use self::Def::*;
     match *self {
       Def::Val(ref v, _) => v,
       Def::Ty(ref v, _) => v,
@@ -546,20 +583,18 @@ impl Def {
 
 impl Debug for Def {
   fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
-    use self::Def::*;
     match *self {
-      Val(ref n, ref e) => write!(fmt, "{:?} = {:?}.", n, e),
-      Ty(ref n, ref t) => write!(fmt, "{:?} : {:?}.", n, t),
+      Def::Val(ref n, ref e) => write!(fmt, "{:?} = {:?}.", n, e),
+      Def::Ty(ref n, ref t) => write!(fmt, "{:?} : {:?}.", n, t),
     }
   }
 }
 
 impl Normalize for Def {
   fn normalize(&self) -> Def {
-    use self::Def::*;
     match *self {
-      Val(ref n, ref e) => Def::Val(n.clone(), e.normalize()),
-      Ty(ref n, ref t) => Def::Ty(n.clone(), t.normalize()),
+      Def::Val(ref n, ref e) => Def::Val(n.clone(), e.normalize()),
+      Def::Ty(ref n, ref t) => Def::Ty(n.clone(), t.normalize()),
     }
   }
 }
@@ -641,6 +676,15 @@ impl Env {
     })
   }
 
+  pub fn get(&self, var: &Var) -> Option<&Def> {
+    self.0.iter().rev().find(|def| {
+      match **def {
+        Def::Val(ref v, _) => *v == *var,
+        Def::Ty(ref v, _) => *v == *var,
+      }
+    })
+  }
+
   pub fn push(&mut self, def: Def) { self.0.push(def) }
 
   pub fn pop(&mut self) { self.0.pop(); }
@@ -654,6 +698,7 @@ impl Env {
           Ok(one) => {
             match one {
               One::Def(ref def) => {
+                // println!(":type = {:?}", def.expr().type_check(&self));
                 let def = def.normalize_in(self);
                 self.push(def);
               }
