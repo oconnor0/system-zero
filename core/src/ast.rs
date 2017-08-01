@@ -266,8 +266,10 @@ fn replace(val: &Var, with: &Expr, body: &Expr) -> Expr {
     }
     Lam(ref var, ref ty, ref body) => {
       if *var == *val {
-        let val = val.shift();
+        // TODO: This isn't the correct use of shift.
         let ty = Box::new(replace(&val, with, &ty));
+        let val = val.shift();
+        let with = with.shift();
         let body = Box::new(replace(&val, with, &body));
         let lam = Lam(var.clone(), ty, body);
         println!("replaced = {:?}", lam);
@@ -282,8 +284,8 @@ fn replace(val: &Var, with: &Expr, body: &Expr) -> Expr {
     }
     Pi(ref var, ref ty, ref body) => {
       if *val == *var {
-        let val = val.shift();
         let ty = Box::new(replace(&val, with, &ty));
+        let val = val.shift();
         let body = Box::new(replace(&val, with, &body));
         let pi = Pi(var.clone(), ty, body);
         println!("replaced = {:?}", pi);

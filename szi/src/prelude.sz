@@ -1,0 +1,16 @@
+id : forall (a : data) -> a -> a.
+id = \(a : data) -> \(va : a) -> va.
+
+all : list bool -> bool.
+all = \(xs : list bool) -> foldr bool xs bool and true.
+
+any : list bool -> bool.
+any = \(xs : list bool) -> foldr bool xs bool or false.
+
+bools : list bool.
+bools = (cons bool false (cons bool true (nil bool))).
+
+all bools.
+
+trues : list bool.
+trues = (cons bool true (cons bool true (nil bool))).
